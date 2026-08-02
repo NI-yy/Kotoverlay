@@ -1,0 +1,23 @@
+# Xcode
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Local configuration and logs
+.env
+*.log
+local-config.json
+
+# Models and captured content must never be committed
+*.gguf
+Models/
+Captures/
+Screenshots/

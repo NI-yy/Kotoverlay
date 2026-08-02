@@ -1,0 +1,45 @@
+name: Bug report
+description: Report reproducible Kotoverlay behavior using synthetic or redacted data.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach unredacted Discord screenshots, messages, tokens, or model files.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: Use synthetic text and redact server, channel, and user information.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Mac model and memory
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Kotoverlay commit or version
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Include timings and error categories, but remove captured text and personal data.

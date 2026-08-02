@@ -1,0 +1,38 @@
+name: Feature request
+description: Propose a scoped improvement to Kotoverlay.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow or limitation should be improved?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior rather than an implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Accessibility extraction
+        - Translation
+        - Companion panel
+        - In-place overlay
+        - OCR fallback
+        - Privacy and security
+        - CI/CD and distribution
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Suggested acceptance criteria
