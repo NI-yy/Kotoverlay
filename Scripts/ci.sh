@@ -13,6 +13,7 @@ required_files=(
   docs/ARCHITECTURE.md
   docs/CI_CD.md
   docs/AXPROBE.md
+  docs/decisions/0001-use-ocr-for-discord-content.md
 )
 
 for required_file in "${required_files[@]}"; do

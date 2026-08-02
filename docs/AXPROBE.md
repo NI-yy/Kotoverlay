@@ -55,21 +55,22 @@ Record only counts, timings, and pass/fail notes—never captured message text.
 
 | Scenario | Expected result | Status |
 | --- | --- | --- |
-| Discord absent | Clear `application not running` error | Pending |
+| Discord absent | Clear `application not running` error | Passed with synthetic bundle ID |
 | Permission denied | Clear permission error; no repeated prompt | Passed |
 | Permission granted without app restart | Next scan succeeds | Passed |
-| Channel switch | Visible message text and frames update | Pending |
-| Scroll | Visible set updates without hanging Discord | Pending |
-| Resize | Frames track the resized window | Pending |
-| Minimize/restore | Safe error or empty result, then recovery | Pending |
-| Multiple Discord windows | Focused/main window is selected | Pending |
+| Discord relaunch | Web-content tree becomes available | Failed: no message descendants |
+| Channel switch | Visible message text and frames update | Not applicable |
+| Scroll | Visible set updates without hanging Discord | Not applicable |
+| Resize | Frames track the resized window | Deferred to window-capture spike |
+| Minimize/restore | Safe error or empty result, then recovery | Deferred to window-capture spike |
+| Multiple Discord windows | Focused/main window is selected | Deferred to window-capture spike |
 
 ## Decision gate
 
 Accessibility remains the primary extractor when visible message bodies have
 usable screen-space frames and a scan is reliably below 250 ms on the reference
 Mac. Otherwise, record the missing roles/attributes and promote the Phase 6 OCR
-fallback. Exact overlay behavior is intentionally outside this phase.
+path. Exact overlay behavior is intentionally outside this phase.
 
 ## Reference-machine observation (2026-08-02)
 
@@ -80,7 +81,8 @@ fallback. Exact overlay behavior is intentionally outside this phase.
   elements in 3.2 ms; no message text was exposed.
 - Bringing Discord to the foreground did not change the result.
 
-The Phase 1 decision remains open until Discord is relaunched after enabling
-manual Accessibility and the channel/scroll/resize scenarios are repeated. If
-the web-content tree remains absent, OCR will become the primary extractor for
-Discord rather than only a fallback.
+After a complete Discord relaunch, the scan returned eleven elements in 23.8 ms:
+the same nested groups plus the three window-control buttons. It still exposed
+no message text. Phase 1 therefore concludes that OCR must be the primary
+Discord content extractor. The rationale and consequences are recorded in
+[ADR 0001](decisions/0001-use-ocr-for-discord-content.md).

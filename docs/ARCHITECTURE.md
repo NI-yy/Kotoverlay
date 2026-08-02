@@ -4,7 +4,8 @@
 
 - macOS-native implementation in Swift.
 - The core must run without a GUI for deterministic testing.
-- Accessibility is the primary extractor; OCR is a fallback.
+- ScreenCaptureKit and Vision OCR are the primary Discord content extractor.
+- Accessibility is retained for application/window diagnostics and metadata.
 - Captured content is sensitive and remains in memory unless cache is explicitly
   enabled.
 - Ollama integration is replaceable and restricted to loopback by default.
@@ -38,9 +39,11 @@ Kotoverlay.app (SwiftUI + AppKit)
 ## Data flow
 
 ```text
-NSWorkspace / Accessibility notifications
-  -> Discord application and window snapshot
-  -> visible text candidates with screen-space rectangles
+NSWorkspace / Accessibility diagnostics
+  -> Discord application and window selection
+  -> ScreenCaptureKit window frame
+  -> changed regions
+  -> Vision OCR text candidates with screen-space rectangles
   -> normalization, language filter, and stable identity
   -> cache lookup
   -> bounded translation scheduler
@@ -49,22 +52,15 @@ NSWorkspace / Accessibility notifications
   -> presentation snapshot on the main actor
 ```
 
-When a usable Accessibility value or frame is missing:
-
-```text
-Discord SCWindow
-  -> ScreenCaptureKit frame
-  -> changed regions
-  -> Vision OCR
-  -> the same normalization and translation pipeline
-```
+The Accessibility tree is not used as the source of Discord message bodies; see
+[ADR 0001](decisions/0001-use-ocr-for-discord-content.md).
 
 ## Core interfaces
 
 The concrete signatures will be decided during implementation, but these
 boundaries are mandatory:
 
-- `TextExtractor`: produces visible text snapshots without translation logic.
+- `TextExtractor`: produces OCR text snapshots without translation logic.
 - `TranslationProvider`: translates normalized requests and supports
   cancellation.
 - `TranslationCache`: stores versioned results without knowing UI details.
@@ -74,7 +70,7 @@ boundaries are mandatory:
 ## Concurrency model
 
 - UI and window mutation run on `MainActor`.
-- Accessibility traversal is bounded and performed off the main actor.
+- Window capture and OCR are bounded and performed off the main actor.
 - One actor owns message identity, pending work, cache state, and generation
   numbers.
 - A channel/window generation invalidates older translation tasks.
@@ -83,17 +79,18 @@ boundaries are mandatory:
 
 ## Identity and caching
 
-Discord may recycle accessibility elements while scrolling. Object identity is
-therefore not sufficient. A message identity should combine normalized text,
-author when available, nearby structure, and a channel/window generation. The
-cache key also includes source language, target language, model identifier, and
-prompt version so that model or prompt changes cannot return stale translations.
+Vision observations are recreated whenever the captured image changes. Object
+identity is therefore not sufficient. A message identity should combine
+normalized text, author when available, nearby structure, and a channel/window
+generation. The cache key also includes source language, target language, model
+identifier, and prompt version so that model or prompt changes cannot return
+stale translations.
 
 ## Permissions
 
-- Accessibility permission is requested first and is sufficient for the primary
-  extraction path.
-- Screen Recording permission is requested only when OCR fallback is enabled.
+- Screen Recording permission is required for the primary extraction path.
+- Accessibility permission is optional for diagnostics and future window
+  metadata enhancements.
 - Permission denial is a supported state with clear recovery instructions.
 - Bundle identifier and signing identity remain stable during local development
   to reduce repeated permission prompts.
