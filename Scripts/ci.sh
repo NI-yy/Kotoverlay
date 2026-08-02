@@ -12,6 +12,7 @@ required_files=(
   docs/IMPLEMENTATION_PLAN.md
   docs/ARCHITECTURE.md
   docs/CI_CD.md
+  docs/AXPROBE.md
 )
 
 for required_file in "${required_files[@]}"; do

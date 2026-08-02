@@ -8,8 +8,8 @@ The project is privacy-first: OCR and translation run on the Mac, and the first
 translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 > [!NOTE]
-> Kotoverlay is in the planning and technical-validation stage. There is no
-> downloadable application yet.
+> Kotoverlay is in the Accessibility feasibility stage. There is no
+> downloadable application yet, but the `axprobe` diagnostic is available.
 
 ## Product goals
 
@@ -61,6 +61,34 @@ Detailed exit criteria and dependencies are in
 
 No model is downloaded or started by the build. CI uses mocks and does not send
 captured content to an external service.
+
+## AXProbe quick start
+
+Build and test:
+
+```sh
+swift build
+swift test
+```
+
+Ask macOS for Accessibility permission and scan Discord once:
+
+```sh
+swift run axprobe --prompt
+```
+
+After granting permission in **System Settings → Privacy & Security →
+Accessibility**, run the command again. To keep checking while granting the
+permission or interacting with Discord:
+
+```sh
+swift run axprobe --watch
+```
+
+The command prints visible text because it is an explicit diagnostic action.
+Kotoverlay does not persist the output. See all safety bounds and options with
+`swift run axprobe --help`. The complete privacy notes and manual test matrix are
+in [docs/AXPROBE.md](docs/AXPROBE.md).
 
 ## Current development environment
 
