@@ -13,11 +13,11 @@ local Ollama API.
 In scope:
 
 - Automatic Discord process and window detection.
-- Accessibility-first extraction of visible messages.
+- Discord-window capture and local Vision OCR of visible messages.
 - Local translation, cancellation, deduplication, and caching.
 - A translation panel that follows the Discord window.
 - Optional in-place overlays after panel behavior is stable.
-- Vision OCR only when Accessibility does not expose usable text.
+- Accessibility retained for application/window diagnostics, not message text.
 
 Not in the first release:
 
@@ -73,6 +73,11 @@ Exit criteria:
   written decision records why OCR must become the primary extractor.
 - One scan completes in under 250 ms on the reference machine.
 - The traversal cannot hang Discord or the CLI.
+
+Outcome (2026-08-02): complete. Discord exposes its window but not message
+descendants, including after relaunch and successful `AXManualAccessibility`.
+OCR is therefore the primary extractor; see
+[ADR 0001](decisions/0001-use-ocr-for-discord-content.md).
 
 ## Phase 2: Local translation spike (`kotoverlay-cli`)
 
@@ -156,9 +161,11 @@ Exit criteria:
 - No overlay is captured recursively by the extraction pipeline.
 - Multi-display and Retina/non-Retina transitions are manually verified.
 
-## Phase 6: ScreenCaptureKit and Vision fallback
+## Phase 6: ScreenCaptureKit and Vision primary extractor (promoted)
 
-Goal: translate content that Discord does not expose through Accessibility.
+Goal: extract visible Discord text and geometry after Phase 1 proved that the
+message tree is not exposed. This phase is promoted to the next extraction task
+and can run in parallel with Phase 2 translation work.
 
 Deliverables:
 
@@ -166,11 +173,12 @@ Deliverables:
 - Discord-window-only capture through ScreenCaptureKit.
 - Change detection and cropped Vision text recognition.
 - Confidence filtering and coordinate normalization.
-- A policy that uses OCR only for missing Accessibility regions.
+- A policy that uses OCR for Discord content while Accessibility remains
+  available for application and window diagnostics.
 
 Exit criteria:
 
-- OCR is disabled when Accessibility provides sufficient text.
+- OCR recognizes visible Discord messages with usable screen-space rectangles.
 - Capture is limited to Discord and never written to disk by default.
 - OCR remains responsive at a capped rate of at most 2 scans per second.
 
@@ -216,20 +224,18 @@ Exit criteria:
 
 ## Recommended issue order
 
-1. Bootstrap Swift package and shared schemes.
-2. Implement Accessibility permission state.
-3. Build the `AXProbe` Discord traversal.
+1. Complete the Accessibility feasibility decision (Issue #1).
+2. Add Discord-window ScreenCaptureKit capture and Vision OCR (Issue #6).
+3. Implement the Ollama provider and translation CLI (Issue #2), in parallel
+   with Issue #6 when useful.
 4. Define core message and geometry types.
-5. Implement the Ollama provider and mock transport.
-6. Build the translation CLI.
-7. Implement deduplication, queueing, and cache.
-8. Create the menu-bar app and onboarding.
-9. Build the Discord-following companion panel.
-10. Implement in-place overlays.
-11. Add ScreenCaptureKit capture.
-12. Add Vision OCR fallback.
-13. Run performance and privacy hardening.
-14. Add release packaging and notarization support.
+5. Implement deduplication, queueing, and cache.
+6. Create the menu-bar app and onboarding.
+7. Build the Discord-following companion panel.
+8. Implement in-place overlays.
+9. Run performance and privacy hardening.
+10. Add release packaging and notarization support.
 
-Issues 2-3 and 5-6 can proceed independently after issue 1. UI work starts only
-after the relevant extraction and translation exit criteria pass.
+Issue #6 is the next extraction gate. Issues #2 and #6 can proceed independently
+after Issue #1. UI work starts only after the relevant extraction and
+translation exit criteria pass.

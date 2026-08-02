@@ -8,8 +8,8 @@ The project is privacy-first: OCR and translation run on the Mac, and the first
 translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 > [!NOTE]
-> Kotoverlay is in the planning and technical-validation stage. There is no
-> downloadable application yet.
+> Kotoverlay is in the Accessibility feasibility stage. There is no
+> downloadable application yet, but the `axprobe` diagnostic is available.
 
 ## Product goals
 
@@ -24,8 +24,8 @@ translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 ```text
 Discord
-  -> Accessibility reader
-  -> ScreenCaptureKit + Vision OCR fallback
+  -> window detection
+  -> ScreenCaptureKit + Vision OCR
   -> message normalization and deduplication
   -> local Ollama translation provider
   -> translation cache
@@ -37,13 +37,13 @@ ApplicationServices, Vision, and ScreenCaptureKit.
 
 ## Roadmap
 
-1. Prove that Discord messages and bounds are available through Accessibility.
-2. Connect a small Swift CLI to `qwen3:1.7b` through Ollama.
-3. Combine extraction, translation, cancellation, and caching in
+1. Complete the Accessibility feasibility test and record the OCR decision.
+2. Capture only the Discord window and recognize visible text with Vision OCR.
+3. Connect a small Swift CLI to `qwen3:1.7b` through Ollama.
+4. Combine extraction, translation, cancellation, and caching in
    `KotoverlayCore`.
-4. Add a Discord-following translation panel.
-5. Add click-through, in-place overlays.
-6. Add ScreenCaptureKit and Vision OCR as a fallback.
+5. Add a Discord-following translation panel.
+6. Add click-through, in-place overlays.
 7. Harden performance, privacy, permissions, and failure recovery.
 8. Package and release the app.
 
@@ -61,6 +61,34 @@ Detailed exit criteria and dependencies are in
 
 No model is downloaded or started by the build. CI uses mocks and does not send
 captured content to an external service.
+
+## AXProbe quick start
+
+Build and test:
+
+```sh
+swift build
+swift test
+```
+
+Ask macOS for Accessibility permission and scan Discord once:
+
+```sh
+swift run axprobe --prompt
+```
+
+After granting permission in **System Settings → Privacy & Security →
+Accessibility**, run the command again. To keep checking while granting the
+permission or interacting with Discord:
+
+```sh
+swift run axprobe --watch
+```
+
+The command prints visible text because it is an explicit diagnostic action.
+Kotoverlay does not persist the output. See all safety bounds and options with
+`swift run axprobe --help`. The complete privacy notes and manual test matrix are
+in [docs/AXPROBE.md](docs/AXPROBE.md).
 
 ## Current development environment
 
