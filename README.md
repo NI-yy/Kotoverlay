@@ -90,6 +90,16 @@ Kotoverlay does not persist the output. See all safety bounds and options with
 `swift run axprobe --help`. The complete privacy notes and manual test matrix are
 in [docs/AXPROBE.md](docs/AXPROBE.md).
 
+The promoted OCR path has a one-shot Discord-window diagnostic:
+
+```sh
+swift run ocrprobe --prompt
+```
+
+Recognized text is redacted by default, and the captured image is never written
+to disk. See [docs/OCRPROBE.md](docs/OCRPROBE.md) for the permission and test
+procedure.
+
 ## Current development environment
 
 The reference development machine is an Apple M2 Mac with 8 GB RAM. The default

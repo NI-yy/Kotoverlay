@@ -13,6 +13,7 @@ required_files=(
   docs/ARCHITECTURE.md
   docs/CI_CD.md
   docs/AXPROBE.md
+  docs/OCRPROBE.md
   docs/decisions/0001-use-ocr-for-discord-content.md
 )
 

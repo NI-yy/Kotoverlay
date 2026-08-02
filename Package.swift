@@ -7,11 +7,13 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "KotoverlayCore", targets: ["KotoverlayCore"]),
-        .executable(name: "axprobe", targets: ["AXProbe"])
+        .executable(name: "axprobe", targets: ["AXProbe"]),
+        .executable(name: "ocrprobe", targets: ["OCRProbe"])
     ],
     targets: [
         .target(name: "KotoverlayCore"),
         .executableTarget(name: "AXProbe", dependencies: ["KotoverlayCore"]),
+        .executableTarget(name: "OCRProbe", dependencies: ["KotoverlayCore"]),
         .testTarget(name: "KotoverlayCoreTests", dependencies: ["KotoverlayCore"])
     ]
 )
