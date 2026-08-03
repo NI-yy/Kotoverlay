@@ -8,8 +8,9 @@ The project is privacy-first: OCR and translation run on the Mac, and the first
 translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 > [!NOTE]
-> Kotoverlay is in the command-line validation stage. There is no downloadable
-> application yet, but OCR and local-translation diagnostics are available.
+> Kotoverlay is in the live-pipeline validation stage. There is no downloadable
+> application yet, but OCR, local translation, and combined diagnostics are
+> available.
 
 ## Product goals
 
@@ -111,6 +112,17 @@ swift run kotoverlay-cli "The Metal shader failed to compile lol"
 The CLI accepts only the loopback Ollama endpoint and never downloads a model.
 See [docs/TRANSLATION_CLI.md](docs/TRANSLATION_CLI.md) for usage, privacy
 boundaries, failure behavior, and measured performance.
+
+Run the combined Discord OCR and translation pipeline with content redacted:
+
+```sh
+swift run pipelineprobe
+swift run pipelineprobe --watch
+```
+
+`pipelineprobe` keeps its cache in memory unless `--cache PATH` explicitly
+enables persistence. See [docs/LIVE_PIPELINE.md](docs/LIVE_PIPELINE.md) for its
+filtering, scheduling, caching, and privacy behavior.
 
 ## Current development environment
 

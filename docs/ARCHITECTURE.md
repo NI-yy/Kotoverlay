@@ -27,7 +27,10 @@ axprobe (Swift executable)
 └── Accessibility feasibility and debug inspection
 
 kotoverlay-cli (Swift executable)
-└── Translation and live-pipeline validation
+└── Isolated translation validation
+
+pipelineprobe (Swift executable)
+└── Combined Discord OCR, filtering, scheduling, caching, and translation
 
 Kotoverlay.app (SwiftUI + AppKit)
 ├── MenuBarAndSettings
