@@ -39,6 +39,10 @@ Kotoverlay.app (SwiftUI + AppKit)
 └── InPlaceOverlay
 ```
 
+The Phase 4 application target is generated from `project.yml` and committed as
+`Kotoverlay.xcodeproj` so CI and contributors need only Xcode to build it.
+XcodeGen is required only after changing project structure.
+
 ## Data flow
 
 ```text

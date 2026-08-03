@@ -86,7 +86,10 @@ public actor LiveTranslationPipeline {
         self.configuration = configuration
     }
 
-    public func process(_ snapshot: TextSnapshot) async -> PipelineRun {
+    public func process(
+        _ snapshot: TextSnapshot,
+        onProgress: (@Sendable ([TranslationResult]) async -> Void)? = nil
+    ) async -> PipelineRun {
         generation &+= 1
         let runGeneration = generation
         activeJob?.cancel()
@@ -95,13 +98,23 @@ public actor LiveTranslationPipeline {
         let cache = self.cache
         let filter = self.filter
         let configuration = self.configuration
+        let guardedProgress: (@Sendable ([TranslationResult]) async -> Void)?
+        if let onProgress {
+            guardedProgress = { [weak self] (results: [TranslationResult]) async in
+                guard let self else { return }
+                await self.emitProgress(results, generation: runGeneration, to: onProgress)
+            }
+        } else {
+            guardedProgress = nil
+        }
         let task = Task {
             await PipelineWorker.run(
                 snapshot: snapshot,
                 provider: provider,
                 cache: cache,
                 filter: filter,
-                configuration: configuration
+                configuration: configuration,
+                onProgress: guardedProgress
             )
         }
         activeJob = task
@@ -114,6 +127,15 @@ public actor LiveTranslationPipeline {
         }
         activeJob = nil
         return run
+    }
+
+    private func emitProgress(
+        _ results: [TranslationResult],
+        generation runGeneration: UInt64,
+        to handler: @Sendable ([TranslationResult]) async -> Void
+    ) async {
+        guard runGeneration == generation else { return }
+        await handler(results)
     }
 
     public func cancel() {
@@ -139,7 +161,8 @@ private enum PipelineWorker {
         provider: any TranslationProvider,
         cache: any TranslationCache,
         filter: EnglishTextFilter,
-        configuration: LivePipelineConfiguration
+        configuration: LivePipelineConfiguration,
+        onProgress: (@Sendable ([TranslationResult]) async -> Void)?
     ) async -> PipelineRun {
         let filtered = filterAndIdentify(snapshot: snapshot, filter: filter)
         var cacheHits: [TranslationResult] = []
@@ -174,11 +197,17 @@ private enum PipelineWorker {
             }
         }
 
+        if !cacheHits.isEmpty {
+            await onProgress?(cacheHits.sorted { $0.visibleOrder < $1.visibleOrder })
+        }
+
         let outcomes = await translate(
             pending,
             provider: provider,
             cache: cache,
-            limit: configuration.maximumConcurrentTranslations
+            limit: configuration.maximumConcurrentTranslations,
+            initialResults: cacheHits,
+            onProgress: onProgress
         )
         var translated: [TranslationResult] = []
         for outcome in outcomes {
@@ -269,7 +298,9 @@ private enum PipelineWorker {
         _ candidates: [Candidate],
         provider: any TranslationProvider,
         cache: any TranslationCache,
-        limit: Int
+        limit: Int,
+        initialResults: [TranslationResult],
+        onProgress: (@Sendable ([TranslationResult]) async -> Void)?
     ) async -> [Outcome] {
         await withTaskGroup(of: Outcome.self, returning: [Outcome].self) { group in
             var nextIndex = 0
@@ -287,6 +318,11 @@ private enum PipelineWorker {
             for _ in 0..<min(limit, candidates.count) { addNext() }
             while let outcome = await group.next() {
                 outcomes.append(outcome)
+                if outcome.result != nil {
+                    let partialResults = (initialResults + outcomes.compactMap(\.result))
+                        .sorted { $0.visibleOrder < $1.visibleOrder }
+                    await onProgress?(partialResults)
+                }
                 addNext()
             }
             return outcomes

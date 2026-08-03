@@ -8,9 +8,9 @@ The project is privacy-first: OCR and translation run on the Mac, and the first
 translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 > [!NOTE]
-> Kotoverlay is in the live-pipeline validation stage. There is no downloadable
-> application yet, but OCR, local translation, and combined diagnostics are
-> available.
+> Kotoverlay now has an early menu-bar application and Discord-following
+> companion panel. There is no packaged download yet; build it locally in
+> Xcode for Phase 4 verification.
 
 ## Product goals
 
@@ -59,6 +59,7 @@ Detailed exit criteria and dependencies are in
 - Xcode 26 or later
 - Swift 6
 - Ollama with `qwen3:1.7b` for local integration testing
+- XcodeGen only when regenerating `Kotoverlay.xcodeproj` from `project.yml`
 
 No model is downloaded or started by the build. CI uses mocks and does not send
 captured content to an external service.
@@ -123,6 +124,17 @@ swift run pipelineprobe --watch
 `pipelineprobe` keeps its cache in memory unless `--cache PATH` explicitly
 enables persistence. See [docs/LIVE_PIPELINE.md](docs/LIVE_PIPELINE.md) for its
 filtering, scheduling, caching, and privacy behavior.
+
+## Menu-bar application
+
+Open `Kotoverlay.xcodeproj`, choose the shared `Kotoverlay` scheme, and run the
+macOS target. Grant Screen Recording when requested, start Discord and Ollama,
+then choose **Start** from the menu-bar item. The companion panel follows the
+Discord window and displays original/translation pairs.
+
+Translations remain in memory by default. Persistent caching is an explicit
+Settings toggle. See [docs/APP.md](docs/APP.md) for onboarding, controls, local
+signing, privacy behavior, and the manual verification matrix.
 
 ## Current development environment
 

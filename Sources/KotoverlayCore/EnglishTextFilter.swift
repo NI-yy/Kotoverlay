@@ -4,6 +4,7 @@ public enum TextExclusionReason: String, Codable, Equatable, Sendable {
     case empty
     case lowConfidence
     case interfaceLabel
+    case metadata
     case codeOnly
     case notEnglish
 }
@@ -24,6 +25,7 @@ public struct EnglishTextFilter: Sendable {
         guard !Self.interfaceLabels.contains(MessageTextNormalizer.normalize(trimmed)) else {
             return .interfaceLabel
         }
+        guard !isDiscordMetadata(trimmed) else { return .metadata }
         guard !isCodeOnly(trimmed) else { return .codeOnly }
         guard isLikelyEnglish(trimmed) else { return .notEnglish }
         return nil
@@ -66,6 +68,28 @@ public struct EnglishTextFilter: Sendable {
 
         let codePrefixes = ["class ", "enum ", "func ", "import ", "let ", "struct ", "var "]
         return codePrefixes.contains(where: trimmed.hasPrefix) && hasCodeExpression
+    }
+
+    private func isDiscordMetadata(_ text: String) -> Bool {
+        let words = text.lowercased().split { !$0.isLetter }.map(String.init)
+        let hasConversationalWord = words.contains(where: Self.commonEnglishWords.contains)
+        if text.hasPrefix("@"), words.count <= 3, !hasConversationalWord {
+            return true
+        }
+        if text.contains("→"), words.count <= 4, !hasConversationalWord {
+            return true
+        }
+        if text.contains("@"), text.contains("+"), words.count <= 5, !hasConversationalWord {
+            return true
+        }
+        let patterns = [
+            #"\b\d{4}/\d{1,2}/\d{1,2}\b"#,
+            #"\b(?:today|yesterday)\s+(?:at\s+)?\d{1,2}:\d{2}\b"#,
+            #"^\d{1,2}:\d{2}$"#
+        ]
+        return patterns.contains { pattern in
+            text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+        }
     }
 
     private static let interfaceLabels: Set<String> = [

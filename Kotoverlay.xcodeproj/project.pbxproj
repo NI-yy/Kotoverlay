@@ -1,0 +1,352 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		097D131F15B588CE157A92EB /* CompanionPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B4E6848332FF6DEF62EC37 /* CompanionPanelController.swift */; };
+		1EF51B479C71E8233812AF69 /* KotoverlayCore in Frameworks */ = {isa = PBXBuildFile; productRef = 68537701FB05CE4BA00499E3 /* KotoverlayCore */; };
+		31D52F11593A7E12DB179194 /* MenuBarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3447D9BFCDAD275D68041A38 /* MenuBarContent.swift */; };
+		AEFCB83C65F4D2BA919E55E4 /* KotoverlayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42ECE57C3290F87D2BF912FE /* KotoverlayApp.swift */; };
+		EF983E77CE534F25E0B8B497 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6995F014771C5A4CA9993701 /* AppModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3447D9BFCDAD275D68041A38 /* MenuBarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarContent.swift; sourceTree = "<group>"; };
+		42ECE57C3290F87D2BF912FE /* KotoverlayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KotoverlayApp.swift; sourceTree = "<group>"; };
+		6995F014771C5A4CA9993701 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		7D36025F9A2B0DB0B762D2FB /* Kotoverlay */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Kotoverlay; path = .; sourceTree = SOURCE_ROOT; };
+		B117051E7CFDEABB26A09B04 /* Kotoverlay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kotoverlay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9B4E6848332FF6DEF62EC37 /* CompanionPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionPanelController.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D38416367374BDBAFBCBC957 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EF51B479C71E8233812AF69 /* KotoverlayCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1B4F8B27865F55F831B3363D = {
+			isa = PBXGroup;
+			children = (
+				30BFFEAE9EA1BEEFC8B32732 /* App */,
+				F6AF105ECC8BAA2F5ECEDC28 /* Packages */,
+				923886B0279A236CB1E94337 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		30BFFEAE9EA1BEEFC8B32732 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				6995F014771C5A4CA9993701 /* AppModel.swift */,
+				B9B4E6848332FF6DEF62EC37 /* CompanionPanelController.swift */,
+				42ECE57C3290F87D2BF912FE /* KotoverlayApp.swift */,
+				3447D9BFCDAD275D68041A38 /* MenuBarContent.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		923886B0279A236CB1E94337 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B117051E7CFDEABB26A09B04 /* Kotoverlay.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F6AF105ECC8BAA2F5ECEDC28 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				7D36025F9A2B0DB0B762D2FB /* Kotoverlay */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B6AB6CF083089C7A3BEB74EC /* Kotoverlay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 69D5ACC6D21FCA9AEEF52B99 /* Build configuration list for PBXNativeTarget "Kotoverlay" */;
+			buildPhases = (
+				E882FA89B13BD39203E783A7 /* Sources */,
+				D38416367374BDBAFBCBC957 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Kotoverlay;
+			packageProductDependencies = (
+				68537701FB05CE4BA00499E3 /* KotoverlayCore */,
+			);
+			productName = Kotoverlay;
+			productReference = B117051E7CFDEABB26A09B04 /* Kotoverlay.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		74E329AF0FA7F6936A77E6F3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B6AB6CF083089C7A3BEB74EC = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 5DE653A5010A256587F6D2C9 /* Build configuration list for PBXProject "Kotoverlay" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1B4F8B27865F55F831B3363D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5136C2FA6D381E0B251DDB53 /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 923886B0279A236CB1E94337 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B6AB6CF083089C7A3BEB74EC /* Kotoverlay */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E882FA89B13BD39203E783A7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF983E77CE534F25E0B8B497 /* AppModel.swift in Sources */,
+				097D131F15B588CE157A92EB /* CompanionPanelController.swift in Sources */,
+				AEFCB83C65F4D2BA919E55E4 /* KotoverlayApp.swift in Sources */,
+				31D52F11593A7E12DB179194 /* MenuBarContent.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		31DF38026A70BDD6ED042A7A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Kotoverlay;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.niyy.Kotoverlay;
+				PRODUCT_NAME = Kotoverlay;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		4EE77B47CA9F753ECCF56C34 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		70C62297CCCE258CB05CCDBB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Kotoverlay;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.niyy.Kotoverlay;
+				PRODUCT_NAME = Kotoverlay;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A01B7D210073EBC53096D525 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5DE653A5010A256587F6D2C9 /* Build configuration list for PBXProject "Kotoverlay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4EE77B47CA9F753ECCF56C34 /* Debug */,
+				A01B7D210073EBC53096D525 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		69D5ACC6D21FCA9AEEF52B99 /* Build configuration list for PBXNativeTarget "Kotoverlay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				31DF38026A70BDD6ED042A7A /* Debug */,
+				70C62297CCCE258CB05CCDBB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5136C2FA6D381E0B251DDB53 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		68537701FB05CE4BA00499E3 /* KotoverlayCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KotoverlayCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 74E329AF0FA7F6936A77E6F3 /* Project object */;
+}
