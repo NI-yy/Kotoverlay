@@ -15,6 +15,7 @@ required_files=(
   docs/AXPROBE.md
   docs/OCRPROBE.md
   docs/TRANSLATION_CLI.md
+  docs/LIVE_PIPELINE.md
   docs/decisions/0001-use-ocr-for-discord-content.md
 )
 
