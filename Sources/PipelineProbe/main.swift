@@ -172,7 +172,7 @@ private struct PipelineProbe {
             )
             let changed = try changeDetector.hasMeaningfulChange(image: capture.image)
             if changed {
-                let observations = try VisionTextRecognizer().recognize(
+                let recognized = try VisionTextRecognizer().recognize(
                     image: capture.image,
                     windowFrame: capture.frame,
                     options: VisionRecognitionOptions(
@@ -180,6 +180,10 @@ private struct PipelineProbe {
                         minimumConfidence: arguments.minimumConfidence,
                         regionOfInterest: DiscordOCRRegion.messageContent
                     )
+                )
+                let observations = DiscordObservationFilter().filter(
+                    recognized,
+                    in: capture.frame
                 )
                 let texts = observations
                     .sorted {

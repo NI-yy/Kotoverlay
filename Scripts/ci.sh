@@ -16,7 +16,9 @@ required_files=(
   docs/OCRPROBE.md
   docs/TRANSLATION_CLI.md
   docs/LIVE_PIPELINE.md
+  docs/APP.md
   docs/decisions/0001-use-ocr-for-discord-content.md
+  project.yml
 )
 
 for required_file in "${required_files[@]}"; do

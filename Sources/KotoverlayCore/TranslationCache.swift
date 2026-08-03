@@ -155,20 +155,27 @@ public actor PersistentTranslationCache: TranslationCache {
 public actor LayeredTranslationCache: TranslationCache {
     private let memory: InMemoryTranslationCache
     private let persistent: PersistentTranslationCache
+    private var persistenceEnabled: Bool
 
     public init(
         memory: InMemoryTranslationCache = InMemoryTranslationCache(),
-        persistent: PersistentTranslationCache
+        persistent: PersistentTranslationCache,
+        persistenceEnabled: Bool = true
     ) {
         self.memory = memory
         self.persistent = persistent
+        self.persistenceEnabled = persistenceEnabled
+    }
+
+    public func setPersistenceEnabled(_ enabled: Bool) {
+        persistenceEnabled = enabled
     }
 
     public func value(for key: TranslationCacheKey) async throws -> CachedTranslation? {
         if let value = await memory.value(for: key) {
             return value
         }
-        if let value = try await persistent.value(for: key) {
+        if persistenceEnabled, let value = try await persistent.value(for: key) {
             await memory.insert(value, for: key)
             return value
         }
@@ -176,7 +183,9 @@ public actor LayeredTranslationCache: TranslationCache {
     }
 
     public func insert(_ value: CachedTranslation, for key: TranslationCacheKey) async throws {
-        try await persistent.insert(value, for: key)
+        if persistenceEnabled {
+            try await persistent.insert(value, for: key)
+        }
         await memory.insert(value, for: key)
     }
 

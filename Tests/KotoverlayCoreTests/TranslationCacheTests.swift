@@ -46,4 +46,23 @@ struct TranslationCacheTests {
         try await reopened.removeAll()
         #expect(try await reopened.value(for: key) == nil)
     }
+
+    @Test("Persistent storage remains opt-in when disabled")
+    func persistenceOptIn() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fileURL = directory.appendingPathComponent("translations.json")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let key = TranslationCacheKey(rawValue: "private-key")
+        let cache = LayeredTranslationCache(
+            persistent: PersistentTranslationCache(fileURL: fileURL),
+            persistenceEnabled: false
+        )
+
+        try await cache.insert(CachedTranslation(translatedText: "メモリのみ"), for: key)
+        #expect(!FileManager.default.fileExists(atPath: fileURL.path))
+        await cache.setPersistenceEnabled(true)
+        try await cache.insert(CachedTranslation(translatedText: "永続化"), for: key)
+        #expect(FileManager.default.fileExists(atPath: fileURL.path))
+    }
 }

@@ -125,6 +125,28 @@ struct LiveTranslationPipelineTests {
         #expect(await probe.maximumActive == 2)
     }
 
+    @Test("Publishes each completed translation before the full run finishes")
+    func progressiveResults() async {
+        let progress = ProgressRecorder()
+        let provider = MockTranslationProvider { request in
+            makeStream {
+                try? await Task.sleep(for: .milliseconds(10))
+                return "訳:\(request.sourceText)"
+            }
+        }
+        let pipeline = LiveTranslationPipeline(provider: provider)
+
+        let run = await pipeline.process(snapshot([
+            detected("old message here", order: 0, y: 100),
+            detected("new message here", order: 1, y: 200)
+        ])) { results in
+            await progress.record(results.map(\.visibleOrder))
+        }
+
+        #expect(await progress.snapshots == [[1], [0, 1]])
+        #expect(run.results.map(\.visibleOrder) == [0, 1])
+    }
+
     private func snapshot(
         _ texts: [DetectedText],
         contextID: String = "graphics/metal"
@@ -182,6 +204,14 @@ private actor ConcurrencyRecorder {
 
     func leave() {
         active -= 1
+    }
+}
+
+private actor ProgressRecorder {
+    private(set) var snapshots: [[Int]] = []
+
+    func record(_ visibleOrders: [Int]) {
+        snapshots.append(visibleOrders)
     }
 }
 
