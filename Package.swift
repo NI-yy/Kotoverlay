@@ -8,12 +8,14 @@ let package = Package(
     products: [
         .library(name: "KotoverlayCore", targets: ["KotoverlayCore"]),
         .executable(name: "axprobe", targets: ["AXProbe"]),
-        .executable(name: "ocrprobe", targets: ["OCRProbe"])
+        .executable(name: "ocrprobe", targets: ["OCRProbe"]),
+        .executable(name: "kotoverlay-cli", targets: ["KotoverlayCLI"])
     ],
     targets: [
         .target(name: "KotoverlayCore"),
         .executableTarget(name: "AXProbe", dependencies: ["KotoverlayCore"]),
         .executableTarget(name: "OCRProbe", dependencies: ["KotoverlayCore"]),
+        .executableTarget(name: "KotoverlayCLI", dependencies: ["KotoverlayCore"]),
         .testTarget(name: "KotoverlayCoreTests", dependencies: ["KotoverlayCore"])
     ]
 )

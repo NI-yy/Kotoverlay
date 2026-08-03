@@ -8,8 +8,8 @@ The project is privacy-first: OCR and translation run on the Mac, and the first
 translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 > [!NOTE]
-> Kotoverlay is in the Accessibility feasibility stage. There is no
-> downloadable application yet, but the `axprobe` diagnostic is available.
+> Kotoverlay is in the command-line validation stage. There is no downloadable
+> application yet, but OCR and local-translation diagnostics are available.
 
 ## Product goals
 
@@ -99,6 +99,18 @@ swift run ocrprobe --prompt
 Recognized text is redacted by default, and the captured image is never written
 to disk. See [docs/OCRPROBE.md](docs/OCRPROBE.md) for the permission and test
 procedure.
+
+Check the local Ollama service and translate synthetic text:
+
+```sh
+swift run kotoverlay-cli --health
+swift run kotoverlay-cli --list-models
+swift run kotoverlay-cli "The Metal shader failed to compile lol"
+```
+
+The CLI accepts only the loopback Ollama endpoint and never downloads a model.
+See [docs/TRANSLATION_CLI.md](docs/TRANSLATION_CLI.md) for usage, privacy
+boundaries, failure behavior, and measured performance.
 
 ## Current development environment
 
