@@ -58,7 +58,10 @@ memory and versioned JSON cache. Cache keys hash message identity, language pair
 provider/model identity, and prompt version; raw source text is not stored in
 the key. The persistent value contains the translated text and timestamp, so
 the selected cache file must still be treated as private. Version 1 cache files
-are migrated to version 2 when opened.
+are migrated to version 2 when opened. Memory caching is capped at 512 entries,
+and persistent caching is capped at 2,000 entries. A snapshot schedules only its
+32 newest eligible candidates; the content-free `backpressureDrops` diagnostic
+reports any older candidates skipped by that limit.
 
 ## Privacy boundaries
 

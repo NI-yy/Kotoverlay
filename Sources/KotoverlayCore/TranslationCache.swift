@@ -42,23 +42,100 @@ public protocol TranslationCache: Sendable {
     func removeAll() async throws
 }
 
+public enum TranslationCacheCapacity {
+    public static let memory = 512
+    public static let persistent = 2_000
+}
+
 public actor InMemoryTranslationCache: TranslationCache {
     private var values: [TranslationCacheKey: CachedTranslation]
+    private var accessOrder: [TranslationCacheKey: UInt64]
+    private var accessCounter: UInt64
+    public let maximumEntryCount: Int
 
-    public init(values: [TranslationCacheKey: CachedTranslation] = [:]) {
-        self.values = values
+    public init(
+        values: [TranslationCacheKey: CachedTranslation] = [:],
+        maximumEntryCount: Int = TranslationCacheCapacity.memory
+    ) {
+        let limit = max(1, maximumEntryCount)
+        let retained = values
+            .sorted(by: Self.olderEntryFirst)
+            .suffix(limit)
+        self.values = Dictionary(uniqueKeysWithValues: retained.map { ($0.key, $0.value) })
+        self.accessOrder = Dictionary(
+            uniqueKeysWithValues: retained.enumerated().map { index, entry in
+                (entry.key, UInt64(index + 1))
+            }
+        )
+        self.accessCounter = UInt64(retained.count)
+        self.maximumEntryCount = limit
     }
 
     public func value(for key: TranslationCacheKey) -> CachedTranslation? {
-        values[key]
+        guard let value = values[key] else { return nil }
+        markAccessed(key)
+        return value
     }
 
     public func insert(_ value: CachedTranslation, for key: TranslationCacheKey) {
         values[key] = value
+        markAccessed(key)
+        pruneIfNeeded()
     }
 
     public func removeAll() {
         values.removeAll(keepingCapacity: false)
+        accessOrder.removeAll(keepingCapacity: false)
+        accessCounter = 0
+    }
+
+    public func entryCount() -> Int {
+        values.count
+    }
+
+    private func markAccessed(_ key: TranslationCacheKey) {
+        accessCounter &+= 1
+        if accessCounter == 0 {
+            let orderedKeys = accessOrder
+                .sorted { lhs, rhs in
+                    if lhs.value == rhs.value { return lhs.key.rawValue < rhs.key.rawValue }
+                    return lhs.value < rhs.value
+                }
+                .map(\.key)
+            accessOrder = Dictionary(
+                uniqueKeysWithValues: orderedKeys.enumerated().map { index, existingKey in
+                    (existingKey, UInt64(index + 1))
+                }
+            )
+            accessCounter = UInt64(orderedKeys.count + 1)
+        }
+        accessOrder[key] = accessCounter
+    }
+
+    private func pruneIfNeeded() {
+        let overflow = values.count - maximumEntryCount
+        guard overflow > 0 else { return }
+        let keysToRemove = accessOrder
+            .sorted { lhs, rhs in
+                if lhs.value == rhs.value { return lhs.key.rawValue < rhs.key.rawValue }
+                return lhs.value < rhs.value
+            }
+            .prefix(overflow)
+            .map(\.key)
+        for key in keysToRemove {
+            values.removeValue(forKey: key)
+            accessOrder.removeValue(forKey: key)
+        }
+    }
+
+    private static func olderEntryFirst(
+        _ lhs: Dictionary<TranslationCacheKey, CachedTranslation>.Element,
+        _ rhs: Dictionary<TranslationCacheKey, CachedTranslation>.Element
+    ) -> Bool {
+        if lhs.value.createdAt == rhs.value.createdAt {
+            return lhs.key.rawValue < rhs.key.rawValue
+        }
+        return lhs.value.createdAt < rhs.value.createdAt
     }
 }
 
@@ -80,11 +157,16 @@ public actor PersistentTranslationCache: TranslationCache {
     public static let currentVersion = 2
 
     private let fileURL: URL
+    public let maximumEntryCount: Int
     private var values: [String: CachedTranslation] = [:]
     private var loaded = false
 
-    public init(fileURL: URL) {
+    public init(
+        fileURL: URL,
+        maximumEntryCount: Int = TranslationCacheCapacity.persistent
+    ) {
         self.fileURL = fileURL
+        self.maximumEntryCount = max(1, maximumEntryCount)
     }
 
     public func value(for key: TranslationCacheKey) throws -> CachedTranslation? {
@@ -95,6 +177,7 @@ public actor PersistentTranslationCache: TranslationCache {
     public func insert(_ value: CachedTranslation, for key: TranslationCacheKey) throws {
         try loadIfNeeded()
         values[key.rawValue] = value
+        pruneIfNeeded()
         try persist()
     }
 
@@ -102,6 +185,11 @@ public actor PersistentTranslationCache: TranslationCache {
         try loadIfNeeded()
         values.removeAll(keepingCapacity: false)
         try persist()
+    }
+
+    public func entryCount() throws -> Int {
+        try loadIfNeeded()
+        return values.count
     }
 
     private func loadIfNeeded() throws {
@@ -123,6 +211,9 @@ public actor PersistentTranslationCache: TranslationCache {
             }
             values = envelope.entries
             loaded = true
+            if pruneIfNeeded() {
+                try persist()
+            }
         case 1:
             guard let legacy = try? decoder.decode(LegacyCacheEnvelope.self, from: data) else {
                 throw PersistentTranslationCacheError.malformedFile
@@ -130,8 +221,9 @@ public actor PersistentTranslationCache: TranslationCache {
             values = legacy.translations.mapValues {
                 CachedTranslation(translatedText: $0, createdAt: .distantPast)
             }
-            try persist()
             loaded = true
+            pruneIfNeeded()
+            try persist()
         default:
             throw PersistentTranslationCacheError.unsupportedVersion(header.version)
         }
@@ -149,6 +241,23 @@ public actor PersistentTranslationCache: TranslationCache {
             CacheEnvelope(version: Self.currentVersion, entries: values)
         )
         try data.write(to: fileURL, options: .atomic)
+    }
+
+    @discardableResult
+    private func pruneIfNeeded() -> Bool {
+        let overflow = values.count - maximumEntryCount
+        guard overflow > 0 else { return false }
+        let keysToRemove = values
+            .sorted { lhs, rhs in
+                if lhs.value.createdAt == rhs.value.createdAt { return lhs.key < rhs.key }
+                return lhs.value.createdAt < rhs.value.createdAt
+            }
+            .prefix(overflow)
+            .map(\.key)
+        for key in keysToRemove {
+            values.removeValue(forKey: key)
+        }
+        return true
     }
 }
 

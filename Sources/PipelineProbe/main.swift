@@ -235,6 +235,7 @@ private struct PipelineProbe {
             "pipeline observed=\(run.diagnostics.observedCount) "
                 + "eligible=\(run.diagnostics.eligibleCount) "
                 + "duplicates=\(run.diagnostics.duplicateCount) "
+                + "backpressureDrops=\(run.diagnostics.backpressureDropCount) "
                 + "cacheHits=\(run.diagnostics.cacheHitCount) "
                 + "translated=\(run.diagnostics.translatedCount) "
                 + "superseded=\(run.diagnostics.superseded) "

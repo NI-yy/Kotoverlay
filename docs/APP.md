@@ -57,6 +57,18 @@ While running, Kotoverlay captures at a maximum of twice per second. Unchanged
 frames skip OCR. Changed frames supersede older translation work, so channel
 switches and scrolling cannot publish stale results.
 
+After four unchanged captures, the capture cadence reduces from twice per second
+to once per second. Any changed frame immediately restores the faster cadence.
+If Discord or Ollama is unavailable, retries use a capped delay instead of
+continuing full-speed capture and inference work. Discord capture resumes after
+the window returns. An Ollama reconnect resets change detection and translates
+the still-visible snapshot again without requiring the Retry button.
+
+Each OCR snapshot submits at most the 32 newest eligible messages. The in-memory
+translation cache retains at most 512 entries, and the opt-in persistent cache
+retains at most 2,000 entries. Older persistent entries and least-recently-used
+memory entries are pruned automatically.
+
 Translations are published progressively, newest visible text first. The panel
 does not wait for every visible message to finish before showing the first
 result. On the reference Apple-silicon Mac with `qwen3:1.7b`, manual verification
@@ -127,6 +139,11 @@ Before merging Phase 4, verify on the reference Mac:
 10. Enable persistent caching, relaunch, verify reuse, then Clear Cache.
 11. Switch between installed `qwen3:1.7b` and `qwen3:4b`; verify readiness,
     model-specific cache behavior, latency, and translation quality.
+12. Quit and relaunch Discord while scanning; verify capture resumes by itself.
+13. Quit and relaunch Ollama while scanning; verify the menu reports waiting and
+    the unchanged visible Discord messages are translated after reconnection.
+14. Leave Discord unchanged for several seconds, then scroll; verify the first
+    update arrives within the one-second idle polling interval.
 
 Automated tests cover panel coordinate conversion and placement, plus the core
 filtering, progressive delivery, ordering, cancellation, bounded concurrency,
