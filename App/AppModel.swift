@@ -27,6 +27,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var statusMessage = "Checking readiness…"
     @Published private(set) var translationCount = 0
     @Published private(set) var results: [TranslationResult] = []
+    @Published private(set) var selectedModel: String
+    @Published private(set) var installedModels: [String] = []
     @Published private(set) var persistentCacheEnabled: Bool
     @Published private(set) var presentationMode: TranslationPresentationMode
     @Published private(set) var alwaysShowOverlayOriginals: Bool
@@ -36,9 +38,15 @@ final class AppModel: ObservableObject {
         screenRecordingGranted && ollamaReady && discordAvailable
     }
 
-    private let provider: OllamaTranslationProvider
+    var ollamaReadinessDetail: String {
+        if ollamaReady { return "Ready" }
+        if installedModels.isEmpty { return "Unavailable" }
+        return "Selected model is not installed"
+    }
+
+    private var provider: OllamaTranslationProvider
     private let cache: LayeredTranslationCache
-    private let pipeline: LiveTranslationPipeline
+    private var pipeline: LiveTranslationPipeline
     private var scanTask: Task<Void, Never>?
     private var latestPipelineTask: Task<Void, Never>?
     private var lastDiscordFrame: CGRect?
@@ -59,7 +67,10 @@ final class AppModel: ObservableObject {
         alwaysShowOverlayOriginals = UserDefaults.standard.bool(
             forKey: "alwaysShowOverlayOriginals"
         )
-        let provider = OllamaTranslationProvider()
+        let initialModel = UserDefaults.standard.string(forKey: "selectedOllamaModel")
+            ?? OllamaModelSelection.recommendedModel
+        selectedModel = initialModel
+        let provider = Self.makeProvider(model: initialModel)
         let persistent = PersistentTranslationCache(fileURL: Self.cacheURL())
         let cache = LayeredTranslationCache(
             persistent: persistent,
@@ -68,15 +79,7 @@ final class AppModel: ObservableObject {
         persistentCacheEnabled = persistenceEnabled
         self.provider = provider
         self.cache = cache
-        pipeline = LiveTranslationPipeline(
-            provider: provider,
-            cache: cache,
-            configuration: LivePipelineConfiguration(
-                providerID: "ollama:qwen3:1.7b",
-                promptVersion: "1",
-                maximumConcurrentTranslations: 1
-            )
-        )
+        pipeline = Self.makePipeline(model: initialModel, provider: provider, cache: cache)
         overlayController.setAlwaysShowOriginals(alwaysShowOverlayOriginals)
     }
 
@@ -118,7 +121,8 @@ final class AppModel: ObservableObject {
         scanTask = nil
         latestPipelineTask?.cancel()
         latestPipelineTask = nil
-        Task { await pipeline.cancel() }
+        let currentPipeline = pipeline
+        Task { await currentPipeline.cancel() }
         panelController.hide()
         overlayController.clear()
         statusMessage = "Paused"
@@ -157,6 +161,20 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func setSelectedModel(_ model: String) {
+        guard installedModels.contains(model), selectedModel != model else { return }
+        pause()
+        selectedModel = model
+        UserDefaults.standard.set(model, forKey: "selectedOllamaModel")
+        provider = Self.makeProvider(model: model)
+        pipeline = Self.makePipeline(model: model, provider: provider, cache: cache)
+        results = []
+        translationCount = 0
+        resultsDiscordFrame = nil
+        statusMessage = "Model changed to \(model). Ready to start."
+        refreshReadiness()
+    }
+
     func setPresentationMode(_ mode: TranslationPresentationMode) {
         guard presentationMode != mode else { return }
         presentationMode = mode
@@ -177,6 +195,8 @@ final class AppModel: ObservableObject {
         screenRecording=\(screenRecordingGranted)
         accessibility=\(accessibilityGranted)
         ollama=\(ollamaReady)
+        selectedModel=\(selectedModel)
+        installedModels=\(installedModels.joined(separator: ","))
         discord=\(discordAvailable)
         persistentCache=\(persistentCacheEnabled)
         \(diagnosticsSummary)
@@ -193,9 +213,26 @@ final class AppModel: ObservableObject {
             withBundleIdentifier: "com.hnc.Discord"
         ).isEmpty
         do {
-            try await provider.healthCheck()
-            ollamaReady = true
+            let models = try await provider.availableModels()
+            installedModels = OllamaModelSelection.installedNames(from: models)
+            let storedModel = UserDefaults.standard.string(forKey: "selectedOllamaModel")
+            let initialModel = OllamaModelSelection.initialModel(
+                storedModel: storedModel,
+                installedModels: installedModels
+            )
+            if initialModel != selectedModel {
+                selectedModel = initialModel
+                provider = Self.makeProvider(model: initialModel)
+                pipeline = Self.makePipeline(
+                    model: initialModel,
+                    provider: provider,
+                    cache: cache
+                )
+                UserDefaults.standard.set(initialModel, forKey: "selectedOllamaModel")
+            }
+            ollamaReady = installedModels.contains(selectedModel)
         } catch {
+            installedModels = []
             ollamaReady = false
         }
         if !isRunning {
@@ -224,19 +261,24 @@ final class AppModel: ObservableObject {
                         recognized,
                         in: capture.frame
                     )
-                    let texts = observations
+                    let recognizedLines = observations
                         .sorted(by: visualOrder)
                         .enumerated()
                         .map { DetectedText(observation: $0.element, visibleOrder: $0.offset) }
+                    let filter = EnglishTextFilter()
+                    let texts = DiscordMessageGrouper().group(
+                        recognizedLines.filter(filter.accepts)
+                    )
                     let snapshot = TextSnapshot(
                         contextID: "discord-window-\(capture.windowID)",
                         windowID: capture.windowID,
                         texts: texts
                     )
                     statusMessage = "Translating \(texts.count) OCR regions…"
+                    let currentPipeline = pipeline
                     latestPipelineTask = Task { [weak self] in
                         guard let self else { return }
-                        let run = await self.pipeline.process(snapshot) { [weak self] partialResults in
+                        let run = await currentPipeline.process(snapshot) { [weak self] partialResults in
                             guard let self else { return }
                             await self.applyProgress(partialResults, discordFrame: capture.frame)
                         }
@@ -373,5 +415,27 @@ final class AppModel: ObservableObject {
         return root
             .appendingPathComponent("Kotoverlay", isDirectory: true)
             .appendingPathComponent("translations-v2.json")
+    }
+
+    private static func makeProvider(model: String) -> OllamaTranslationProvider {
+        OllamaTranslationProvider(
+            configuration: try! OllamaConfiguration(model: model)
+        )
+    }
+
+    private static func makePipeline(
+        model: String,
+        provider: OllamaTranslationProvider,
+        cache: LayeredTranslationCache
+    ) -> LiveTranslationPipeline {
+        LiveTranslationPipeline(
+            provider: provider,
+            cache: cache,
+            configuration: LivePipelineConfiguration(
+                providerID: "ollama:\(model)",
+                promptVersion: "2",
+                maximumConcurrentTranslations: 1
+            )
+        )
     }
 }

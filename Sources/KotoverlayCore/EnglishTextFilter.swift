@@ -5,6 +5,7 @@ public enum TextExclusionReason: String, Codable, Equatable, Sendable {
     case lowConfidence
     case interfaceLabel
     case metadata
+    case authorLabel
     case codeOnly
     case notEnglish
 }
@@ -26,6 +27,7 @@ public struct EnglishTextFilter: Sendable {
             return .interfaceLabel
         }
         guard !isDiscordMetadata(trimmed) else { return .metadata }
+        guard !isLikelyAuthorLabel(trimmed) else { return .authorLabel }
         guard !isCodeOnly(trimmed) else { return .codeOnly }
         guard isLikelyEnglish(trimmed) else { return .notEnglish }
         return nil
@@ -92,6 +94,28 @@ public struct EnglishTextFilter: Sendable {
         }
     }
 
+    private func isLikelyAuthorLabel(_ text: String) -> Bool {
+        guard !text.contains(where: \Character.isWhitespace),
+              text.count >= 3,
+              text.count <= 32,
+              text.range(
+                of: #"^[A-Za-z0-9_.-]+$"#,
+                options: .regularExpression
+              ) != nil else {
+            return false
+        }
+        let normalized = text.lowercased()
+        guard !Self.standaloneMessageWords.contains(normalized) else { return false }
+
+        let containsDigitOrUsernamePunctuation = text.contains {
+            $0.isNumber || $0 == "_" || $0 == "." || $0 == "-"
+        }
+        let letters = text.filter(\.isLetter)
+        let isAllLowercase = !letters.isEmpty && letters == letters.lowercased()
+        let isAllUppercase = letters.count >= 2 && letters == letters.uppercased()
+        return containsDigitOrUsernamePunctuation || isAllLowercase || isAllUppercase
+    }
+
     private static let interfaceLabels: Set<String> = [
         "add reaction", "edit channel", "friends", "inbox", "mark as read",
         "members", "message", "new messages", "notification settings",
@@ -104,5 +128,12 @@ public struct EnglishTextFilter: Sendable {
         "i", "if", "in", "is", "it", "my", "not", "of", "on", "or",
         "so", "that", "the", "this", "to", "use", "was", "we", "what",
         "when", "with", "would", "you", "your"
+    ]
+
+    private static let standaloneMessageWords: Set<String> = [
+        "agreed", "exactly", "hello", "honestly", "interesting", "lmao",
+        "lol", "nice", "no", "nope", "sure", "thanks", "wow", "yes",
+        "bindless", "cpu", "descriptor", "directx", "gmem", "gpu", "metal",
+        "opengl", "prefetch", "shader", "swift", "thread", "uniform", "vulkan"
     ]
 }

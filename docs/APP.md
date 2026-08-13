@@ -37,13 +37,19 @@ xcodebuild \
 The menu shows readiness for:
 
 - **Screen Recording** — required for Discord-window-only capture.
-- **Ollama / qwen3:1.7b** — required and checked through loopback only.
+- **Ollama / selected model** — required and checked through loopback only.
 - **Discord** — required to start; a visible desktop window must exist.
 - **Accessibility** — optional and retained for diagnostics, not message text.
 
 Available controls are Start, Pause, Retry, Clear Cache, Copy Diagnostics,
 Settings, and Quit. Closing the companion panel pauses capture and translation.
 Retry refreshes readiness and resumes when all required services are available.
+
+Settings lists models already installed in Ollama. `qwen3:1.7b` is currently
+validated and selected by default. Other installed models, including
+`qwen3:4b`, can be selected for manual comparison. Changing the model pauses the
+current scan and keeps cache entries separate by model. The application does
+not download, create, or remove models.
 
 ## Display modes
 
@@ -56,6 +62,12 @@ does not wait for every visible message to finish before showing the first
 result. On the reference Apple-silicon Mac with `qwen3:1.7b`, manual verification
 reduced time to first translation from about five seconds to under one second.
 Total completion time still depends on the number and length of visible messages.
+
+Adjacent OCR lines that appear to belong to one Discord message are grouped into
+one translation request. Isolated author labels and Discord metadata are removed
+before translation, and the local prompt includes a small GPU terminology
+glossary. These heuristics improve context but deliberately keep indented replies
+and visually separate messages independent.
 
 The **Companion panel** mode uses a non-activating utility panel that:
 
@@ -113,6 +125,8 @@ Before merging Phase 4, verify on the reference Mac:
 8. Pause and close the panel; scanning and translation stop.
 9. Copy Diagnostics; verify it contains states/counts but no message content.
 10. Enable persistent caching, relaunch, verify reuse, then Clear Cache.
+11. Switch between installed `qwen3:1.7b` and `qwen3:4b`; verify readiness,
+    model-specific cache behavior, latency, and translation quality.
 
 Automated tests cover panel coordinate conversion and placement, plus the core
 filtering, progressive delivery, ordering, cancellation, bounded concurrency,

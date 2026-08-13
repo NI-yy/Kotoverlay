@@ -84,9 +84,9 @@ private struct ReadinessRows: View {
                 model.requestScreenRecordingPermission()
             }
             ReadinessRow(
-                title: "Ollama / qwen3:1.7b",
+                title: "Ollama / \(model.selectedModel)",
                 ready: model.ollamaReady,
-                detail: model.ollamaReady ? "Ready" : "Unavailable"
+                detail: model.ollamaReadinessDetail
             ) {
                 model.refreshReadiness()
             }
@@ -139,7 +139,25 @@ struct SettingsContent: View {
         Form {
             Section("Local translation") {
                 LabeledContent("Endpoint", value: "http://127.0.0.1:11434")
-                LabeledContent("Model", value: "qwen3:1.7b")
+                Picker(
+                    "Model",
+                    selection: Binding(
+                        get: { model.selectedModel },
+                        set: { model.setSelectedModel($0) }
+                    )
+                ) {
+                    if model.installedModels.isEmpty {
+                        Text(model.selectedModel).tag(model.selectedModel)
+                    } else {
+                        ForEach(model.installedModels, id: \.self) { installedModel in
+                            Text(installedModel).tag(installedModel)
+                        }
+                    }
+                }
+                .disabled(model.installedModels.isEmpty)
+                Text("Only models already installed in Ollama are shown. qwen3:1.7b is currently validated and recommended; other installed models can be compared manually.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Privacy") {
                 Text("Only the Discord window is captured. Screenshots are not saved. Translations are cached locally and can be cleared from the menu.")

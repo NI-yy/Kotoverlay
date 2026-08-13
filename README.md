@@ -40,7 +40,7 @@ ApplicationServices, Vision, and ScreenCaptureKit.
 
 1. Complete the Accessibility feasibility test and record the OCR decision.
 2. Capture only the Discord window and recognize visible text with Vision OCR.
-3. Connect a small Swift CLI to `qwen3:1.7b` through Ollama.
+3. Connect a small Swift CLI to an installed Qwen 3 model through Ollama.
 4. Combine extraction, translation, cancellation, and caching in
    `KotoverlayCore`.
 5. Add a Discord-following translation panel.
@@ -58,7 +58,7 @@ Detailed exit criteria and dependencies are in
 - macOS 15 or later
 - Xcode 26 or later
 - Swift 6
-- Ollama with `qwen3:1.7b` for local integration testing
+- Ollama with `qwen3:1.7b` (validated) and optionally `qwen3:4b` for comparison
 - XcodeGen only when regenerating `Kotoverlay.xcodeproj` from `project.yml`
 
 No model is downloaded or started by the build. CI uses mocks and does not send
@@ -129,9 +129,10 @@ filtering, scheduling, caching, and privacy behavior.
 
 Open `Kotoverlay.xcodeproj`, choose the shared `Kotoverlay` scheme, and run the
 macOS target. Grant Screen Recording when requested, start Discord and Ollama,
-choose the companion or in-place display mode, then select **Start** from the
-menu-bar item. The companion panel displays original/translation pairs; the
-click-through overlay places compact translations over their source lines.
+choose an installed model in Settings and the companion or in-place display
+mode, then select **Start** from the menu-bar item. The companion panel displays
+original/translation pairs; the click-through overlay places compact
+translations over their source lines. Kotoverlay never downloads models itself.
 
 Translations remain in memory by default. Persistent caching is an explicit
 Settings toggle. See [docs/APP.md](docs/APP.md) for onboarding, controls, local
