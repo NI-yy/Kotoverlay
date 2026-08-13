@@ -20,6 +20,8 @@ struct EnglishTextFilterTests {
         #expect(filter.exclusionReason(for: candidate("@Dilute Yippee")) == .metadata)
         #expect(filter.exclusionReason(for: candidate("Antonio → MOUS")) == .metadata)
         #expect(filter.exclusionReason(for: candidate("P @Antonio + MOUS")) == .metadata)
+        #expect(filter.exclusionReason(for: candidate("neure")) == .authorLabel)
+        #expect(filter.exclusionReason(for: candidate("ilcheese2")) == .authorLabel)
         #expect(filter.exclusionReason(for: candidate("これは日本語です")) == .notEnglish)
         #expect(filter.exclusionReason(for: candidate("Hi", confidence: 0.1)) == .lowConfidence)
     }
@@ -27,6 +29,8 @@ struct EnglishTextFilterTests {
     @Test("Keeps conversational messages that begin with a mention")
     func keepsMentionedMessages() {
         #expect(filter.accepts(candidate("@Dilute can you show the shader?")))
+        #expect(filter.accepts(candidate("Thanks")))
+        #expect(filter.accepts(candidate("uniform")))
     }
 
     private func candidate(_ text: String, confidence: Float = 1) -> DetectedText {

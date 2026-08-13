@@ -155,7 +155,7 @@ private struct PipelineProbe {
             filter: EnglishTextFilter(minimumConfidence: arguments.minimumConfidence),
             configuration: LivePipelineConfiguration(
                 providerID: "ollama:\(arguments.model)",
-                promptVersion: "1",
+                promptVersion: "2",
                 maximumConcurrentTranslations: 1
             )
         )
@@ -185,7 +185,7 @@ private struct PipelineProbe {
                     recognized,
                     in: capture.frame
                 )
-                let texts = observations
+                let recognizedLines = observations
                     .sorted {
                         if $0.screenRect.minY == $1.screenRect.minY {
                             return $0.screenRect.minX < $1.screenRect.minX
@@ -194,6 +194,11 @@ private struct PipelineProbe {
                     }
                     .enumerated()
                     .map { DetectedText(observation: $0.element, visibleOrder: $0.offset) }
+                let filter = EnglishTextFilter(minimumConfidence: arguments.minimumConfidence)
+                let texts = DiscordMessageGrouper().group(
+                    recognizedLines,
+                    filteringWith: filter
+                )
                 let snapshot = TextSnapshot(
                     contextID: "discord-window-\(capture.windowID)",
                     windowID: capture.windowID,

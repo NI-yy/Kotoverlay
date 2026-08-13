@@ -7,7 +7,7 @@ public struct LivePipelineConfiguration: Equatable, Sendable {
 
     public init(
         providerID: String = "ollama:qwen3:1.7b",
-        promptVersion: String = "1",
+        promptVersion: String = "2",
         maximumConcurrentTranslations: Int = 1
     ) {
         self.providerID = providerID

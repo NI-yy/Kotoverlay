@@ -192,6 +192,7 @@ public final class OllamaTranslationProvider: TranslationProvider, @unchecked Se
             <source>
             \(protectedText.maskedText)
             </source>
+            /no_think
             """,
             system: Self.translationSystemPrompt,
             stream: true,
@@ -253,6 +254,8 @@ public final class OllamaTranslationProvider: TranslationProvider, @unchecked Se
     Preserve technical names such as Metal, Vulkan, OpenGL, DirectX, Swift, C++, API, shader, GPU, CPU, and framework names.
     Tokens matching __KOTO_N__ are protected placeholders. Copy each placeholder character-for-character unchanged and translate every other natural-language word.
     Use this graphics terminology consistently: shader=シェーダー, rendering=レンダリング, render pass=レンダーパス, pipeline=パイプライン, texture=テクスチャ, framebuffer=フレームバッファ, command buffer=コマンドバッファ, compile=コンパイル, shell emulator=シェルエミュレーター.
+    In GPU and shader discussions use: perf cliff=性能の急落, thread=スレッド, descriptor=デスクリプター, bindless=バインドレス, prefetch=プリフェッチ, shader wave=シェーダーウェーブ. Preserve GMEM exactly. Translate uniform as「一様」when it describes control flow or access across threads; preserve `uniform` when it is an API identifier or declared symbol.
+    Resolve pronouns and sentence fragments using the surrounding text in the same request. Do not invent a subject when the source is genuinely fragmentary.
     Translate internet laughter consistently: lol=笑, lmao=笑.
     Keep casual Discord messages casual. Do not make them polite or formal. Preserve slang and intensity when safe and natural in Japanese.
     Example: "The shader crashed lol" becomes "シェーダーがクラッシュした、笑".
