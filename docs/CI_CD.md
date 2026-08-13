@@ -25,6 +25,9 @@ or access real Discord content.
 - Fixture tests: sanitized Accessibility/OCR snapshots committed as test data.
 - Local integration tests: real Discord, Accessibility permissions, Ollama, and
   overlays; never required in hosted CI.
+- Local performance profiles: Time Profiler, Points of Interest, and Allocations
+  on the reference Mac; traces are not uploaded because process memory can
+  contain captured Discord content.
 - Manual release checks: Spaces, multiple displays, Retina scaling, permissions,
   relaunch, and clean installation.
 

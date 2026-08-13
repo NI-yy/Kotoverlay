@@ -144,10 +144,13 @@ Before merging Phase 4, verify on the reference Mac:
     the unchanged visible Discord messages are translated after reconnection.
 14. Leave Discord unchanged for several seconds, then scroll; verify the first
     update arrives within the one-second idle polling interval.
+15. Follow the Time Profiler and Allocations scenarios in `PERFORMANCE.md`, then
+    use Copy Diagnostics to record content-free stage timing aggregates.
 
 Automated tests cover panel coordinate conversion and placement, plus the core
 filtering, progressive delivery, ordering, cancellation, bounded concurrency,
-and cache behavior. The initial reference-screen check reduced 49 raw candidates
+cache behavior, and bounded performance-metric aggregation. The initial
+reference-screen check reduced 49 raw candidates
 to 19 after removing the dense Discord member column; later filtering also
 removes common author, role, mention-only, reply-header, and timestamp regions.
 

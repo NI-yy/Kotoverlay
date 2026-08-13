@@ -51,7 +51,9 @@ ApplicationServices, Vision, and ScreenCaptureKit.
 Detailed exit criteria and dependencies are in
 [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for component boundaries and
-[docs/CI_CD.md](docs/CI_CD.md) for automation and release policy.
+[docs/CI_CD.md](docs/CI_CD.md) for automation and release policy. Phase 7
+performance checks are documented in
+[docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ## Development requirements
 

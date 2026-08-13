@@ -3,6 +3,7 @@ import Combine
 import CoreGraphics
 import Foundation
 import KotoverlayCore
+import os
 
 enum TranslationPresentationMode: String, CaseIterable, Identifiable {
     case companion
@@ -52,6 +53,11 @@ final class AppModel: ObservableObject {
     private var lastDiscordFrame: CGRect?
     private var lastDiscordWindowID: CGWindowID?
     private var resultsDiscordFrame: CGRect?
+    private var performanceMetrics = RuntimePerformanceMetrics()
+    private let performanceLog = OSLog(
+        subsystem: "dev.niyy.Kotoverlay",
+        category: "Performance"
+    )
 
     private lazy var panelController = CompanionPanelController { [weak self] in
         self?.pause()
@@ -108,6 +114,7 @@ final class AppModel: ObservableObject {
             return
         }
         isRunning = true
+        performanceMetrics.reset()
         statusMessage = "Watching Discord…"
         scanTask = Task { [weak self] in
             await self?.scanLoop()
@@ -202,6 +209,7 @@ final class AppModel: ObservableObject {
         cacheLimits=memory:\(TranslationCacheCapacity.memory),persistent:\(TranslationCacheCapacity.persistent)
         candidateLimit=\(LivePipelineConfiguration.defaultMaximumCandidatesPerSnapshot)
         \(diagnosticsSummary)
+        \(performanceMetrics.diagnosticsLines().joined(separator: "\n"))
         """
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(report, forType: .string)
@@ -272,7 +280,12 @@ final class AppModel: ObservableObject {
             }
 
             do {
-                let capture = try await DiscordWindowCapturer().capture()
+                let capture = try await measure(
+                    stage: .capture,
+                    signpostName: "Discord capture"
+                ) {
+                    try await DiscordWindowCapturer().capture()
+                }
                 try Task.checkCancellation()
                 discordAvailable = true
                 lastDiscordFrame = capture.frame
@@ -280,9 +293,15 @@ final class AppModel: ObservableObject {
                 presentCurrentResults()
 
                 let changed = try changeDetector.hasMeaningfulChange(image: capture.image)
+                performanceMetrics.recordFrame(changed: changed)
                 interval = scanSchedule.interval(afterMeaningfulChange: changed)
                 if changed {
-                    let recognized = try await recognize(capture)
+                    let recognized = try await measure(
+                        stage: .ocr,
+                        signpostName: "Vision OCR"
+                    ) {
+                        try await recognize(capture)
+                    }
                     try Task.checkCancellation()
                     let observations = DiscordObservationFilter().filter(
                         recognized,
@@ -307,9 +326,17 @@ final class AppModel: ObservableObject {
                     latestPipelineTask?.cancel()
                     latestPipelineTask = Task { [weak self] in
                         guard let self else { return }
-                        let run = await currentPipeline.process(snapshot) { [weak self] partialResults in
-                            guard let self else { return }
-                            await self.applyProgress(partialResults, discordFrame: capture.frame)
+                        let run = await self.measure(
+                            stage: .translation,
+                            signpostName: "Local translation"
+                        ) {
+                            await currentPipeline.process(snapshot) { [weak self] partialResults in
+                                guard let self else { return }
+                                await self.applyProgress(
+                                    partialResults,
+                                    discordFrame: capture.frame
+                                )
+                            }
                         }
                         self.apply(run, discordFrame: capture.frame)
                     }
@@ -318,9 +345,11 @@ final class AppModel: ObservableObject {
             } catch is CancellationError {
                 break
             } catch let error as WindowCaptureError {
+                performanceMetrics.recordFailure()
                 handleCaptureError(error)
                 interval = captureBackoff.nextDelay()
             } catch {
+                performanceMetrics.recordFailure()
                 statusMessage = "Capture or OCR failed; retrying…"
                 interval = captureBackoff.nextDelay()
             }
@@ -344,6 +373,35 @@ final class AppModel: ObservableObject {
                 )
             )
         }.value
+    }
+
+    private func measure<T>(
+        stage: RuntimeMetricStage,
+        signpostName: StaticString,
+        operation: () async throws -> T
+    ) async rethrows -> T {
+        let clock = ContinuousClock()
+        let started = clock.now
+        let signpostID = OSSignpostID(log: performanceLog)
+        os_signpost(
+            .begin,
+            log: performanceLog,
+            name: signpostName,
+            signpostID: signpostID
+        )
+        defer {
+            os_signpost(
+                .end,
+                log: performanceLog,
+                name: signpostName,
+                signpostID: signpostID
+            )
+            performanceMetrics.record(
+                stage: stage,
+                duration: started.duration(to: clock.now)
+            )
+        }
+        return try await operation()
     }
 
     private func apply(_ run: PipelineRun, discordFrame: CGRect) {

@@ -215,6 +215,12 @@ translated again without pressing Retry. Instruments profiles, the privacy
 threat model, synthetic end-to-end fixtures, and Kotoverlay accessibility remain
 on the parent Issue #7.
 
+Issue #19 adds bounded content-free timing aggregates and Instruments signposts
+for Discord capture, Vision OCR, and local translation. The reference M2 / 8 GB
+profiling procedure and unfilled result table live in `docs/PERFORMANCE.md`;
+measured CPU and memory values must be recorded from a manual profile rather
+than estimated or produced in hosted CI.
+
 ## Phase 8: Packaging and release automation
 
 Goal: publish reproducible GitHub releases without committing secrets.
