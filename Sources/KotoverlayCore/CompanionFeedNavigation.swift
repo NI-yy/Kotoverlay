@@ -16,4 +16,15 @@ public enum CompanionFeedNavigation {
         guard !previous.isEmpty, !current.isEmpty else { return false }
         return Set(previous).isDisjoint(with: Set(current))
     }
+
+    public static func shouldKeepFollowingAfterLatestChanges(
+        previousLatest: MessageIdentity?,
+        currentLatest: MessageIdentity?,
+        visibleIdentity: MessageIdentity?
+    ) -> Bool {
+        guard previousLatest != nil, previousLatest != currentLatest else {
+            return true
+        }
+        return visibleIdentity == currentLatest
+    }
 }

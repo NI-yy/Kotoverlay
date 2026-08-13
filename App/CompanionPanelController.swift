@@ -147,9 +147,13 @@ struct CompanionPanelView: View {
                 .defaultScrollAnchor(.bottom)
                 .scrollPosition(id: $scrollPosition, anchor: .bottom)
                 .onAppear { followLatest() }
-                .onChange(of: latestIdentity) { _, latest in
-                    guard followsLatest else { return }
-                    scrollPosition = latest
+                .onChange(of: latestIdentity) { previousLatest, latest in
+                    followsLatest = CompanionFeedNavigation
+                        .shouldKeepFollowingAfterLatestChanges(
+                            previousLatest: previousLatest,
+                            currentLatest: latest,
+                            visibleIdentity: scrollPosition
+                        )
                 }
                 .onChange(of: scrollPosition) { _, visibleIdentity in
                     followsLatest = CompanionFeedNavigation.isAtLatest(

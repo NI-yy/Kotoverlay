@@ -38,4 +38,23 @@ struct CompanionFeedNavigationTests {
             current: [third]
         ))
     }
+
+    @Test("A progressively added translation preserves the current reading position")
+    func preservesPositionForProgressiveResults() {
+        #expect(!CompanionFeedNavigation.shouldKeepFollowingAfterLatestChanges(
+            previousLatest: second,
+            currentLatest: third,
+            visibleIdentity: second
+        ))
+        #expect(CompanionFeedNavigation.shouldKeepFollowingAfterLatestChanges(
+            previousLatest: second,
+            currentLatest: third,
+            visibleIdentity: third
+        ))
+        #expect(CompanionFeedNavigation.shouldKeepFollowingAfterLatestChanges(
+            previousLatest: nil,
+            currentLatest: first,
+            visibleIdentity: nil
+        ))
+    }
 }
