@@ -1,16 +1,16 @@
 # Kotoverlay
 
 Kotoverlay is an open-source macOS utility that translates visible English text
-from Discord into Japanese with a local LLM and presents the result beside, and
-eventually on top of, the source content.
+from Discord into Japanese with a local LLM and presents the result beside or
+directly on top of the source content.
 
 The project is privacy-first: OCR and translation run on the Mac, and the first
 translation provider is a local Ollama instance bound to `127.0.0.1`.
 
 > [!NOTE]
-> Kotoverlay now has an early menu-bar application and Discord-following
-> companion panel. There is no packaged download yet; build it locally in
-> Xcode for Phase 4 verification.
+> Kotoverlay now has an early menu-bar application with a Discord-following
+> companion panel and experimental click-through in-place overlays. There is no
+> packaged download yet; build it locally in Xcode for verification.
 
 ## Product goals
 
@@ -129,8 +129,9 @@ filtering, scheduling, caching, and privacy behavior.
 
 Open `Kotoverlay.xcodeproj`, choose the shared `Kotoverlay` scheme, and run the
 macOS target. Grant Screen Recording when requested, start Discord and Ollama,
-then choose **Start** from the menu-bar item. The companion panel follows the
-Discord window and displays original/translation pairs.
+choose the companion or in-place display mode, then select **Start** from the
+menu-bar item. The companion panel displays original/translation pairs; the
+click-through overlay places compact translations over their source lines.
 
 Translations remain in memory by default. Persistent caching is an explicit
 Settings toggle. See [docs/APP.md](docs/APP.md) for onboarding, controls, local

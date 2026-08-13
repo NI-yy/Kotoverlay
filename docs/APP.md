@@ -45,7 +45,7 @@ Available controls are Start, Pause, Retry, Clear Cache, Copy Diagnostics,
 Settings, and Quit. Closing the companion panel pauses capture and translation.
 Retry refreshes readiness and resumes when all required services are available.
 
-## Companion panel behavior
+## Display modes
 
 While running, Kotoverlay captures at a maximum of twice per second. Unchanged
 frames skip OCR. Changed frames supersede older translation work, so channel
@@ -57,7 +57,7 @@ result. On the reference Apple-silicon Mac with `qwen3:1.7b`, manual verificatio
 reduced time to first translation from about five seconds to under one second.
 Total completion time still depends on the number and length of visible messages.
 
-The non-activating utility panel:
+The **Companion panel** mode uses a non-activating utility panel that:
 
 - follows the Discord window's current screen-space frame;
 - prefers the right side, falls back to the left, and clamps to the visible
@@ -68,8 +68,23 @@ The non-activating utility panel:
 - can appear in full-screen and Space transitions;
 - presents original and Japanese text together.
 
-The Phase 5 in-place overlay will add click-through text directly over Discord.
-This companion panel intentionally remains a separate window first.
+The **In-place overlay** mode places translations directly above the matching
+Discord OCR regions. Each borderless `NSPanel`:
+
+- ignores mouse events so Discord remains clickable and scrollable;
+- is reused by stable message identity to avoid unnecessary window churn;
+- is excluded from ScreenCaptureKit sharing to prevent recursive capture;
+- follows Discord movement and resize using source-window-relative coordinates;
+- disappears when Discord is not frontmost or when its source is stale,
+  off-screen, or too close to another overlay;
+- shows one compact line to preserve the association with its source text;
+- switches to the original English text while Option is held, or permanently
+  when enabled in Settings.
+
+Small collisions may move by at most 12 points. A translation that would need a
+larger displacement is hidden instead of being attached visually to the wrong
+message. This policy fixed the dense long-message overlap observed during the
+first Phase 5 manual trial.
 
 ## Privacy
 
@@ -104,3 +119,16 @@ filtering, progressive delivery, ordering, cancellation, bounded concurrency,
 and cache behavior. The initial reference-screen check reduced 49 raw candidates
 to 19 after removing the dense Discord member column; later filtering also
 removes common author, role, mention-only, reply-header, and timestamp regions.
+
+## Phase 5 manual verification
+
+The reference Mac verification confirmed that compact in-place translations:
+
+- align with their source lines closely enough to identify the corresponding
+  Discord message;
+- no longer cascade over adjacent long messages;
+- remain visible and readable while Discord is used normally;
+- retain click-through behavior.
+
+Multi-display, backing-scale transitions, full-screen Spaces, and recursive
+capture remain explicit checks before Phase 5 is merged.

@@ -161,6 +161,11 @@ Exit criteria:
 - No overlay is captured recursively by the extraction pipeline.
 - Multi-display and Retina/non-Retina transitions are manually verified.
 
+Implementation status: the initial click-through overlay, stable-identity
+reuse, coordinate reprojection, compact collision handling, frontmost cleanup,
+and Option-key original-text access are implemented on Issue #5. Single-display
+manual verification confirms usable alignment without persistent overlap.
+
 ## Phase 6: ScreenCaptureKit and Vision primary extractor (promoted)
 
 Goal: extract visible Discord text and geometry after Phase 1 proved that the
