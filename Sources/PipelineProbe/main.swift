@@ -196,7 +196,8 @@ private struct PipelineProbe {
                     .map { DetectedText(observation: $0.element, visibleOrder: $0.offset) }
                 let filter = EnglishTextFilter(minimumConfidence: arguments.minimumConfidence)
                 let texts = DiscordMessageGrouper().group(
-                    recognizedLines.filter(filter.accepts)
+                    recognizedLines,
+                    filteringWith: filter
                 )
                 let snapshot = TextSnapshot(
                     contextID: "discord-window-\(capture.windowID)",

@@ -84,10 +84,16 @@ struct CompanionPanelView: View {
                     LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(results, id: \.identity) { result in
                             VStack(alignment: .leading, spacing: 5) {
+                                Text("Original")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
                                 Text(result.sourceText)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .textSelection(.enabled)
+                                Text("日本語")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
                                 Text(result.translatedText)
                                     .font(.body)
                                     .textSelection(.enabled)

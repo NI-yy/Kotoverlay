@@ -39,6 +39,35 @@ struct DiscordMessageGrouperTests {
         #expect(grouped.count == 2)
     }
 
+    @Test("Groups consecutive Discord paragraphs until the next author header")
+    func groupsAuthorBlock() {
+        let filter = EnglishTextFilter()
+        let grouped = DiscordMessageGrouper().group([
+            line("Ben 昨日 15:47", x: 300, y: 100),
+            line("I made a company email and registered it.", x: 300, y: 124),
+            line("Then support sent me a ticket link.", x: 300, y: 146),
+            line("It was a mildly frustrating experience.", x: 300, y: 205),
+            line("MJP 2026/08/07 23:03", x: 300, y: 260),
+            line("The descriptor loads were not uniform.", x: 300, y: 284),
+            line("They could not be prefetched into GMEM.", x: 300, y: 306)
+        ], filteringWith: filter)
+
+        #expect(grouped.count == 2)
+        #expect(grouped[0].text == "I made a company email and registered it. Then support sent me a ticket link. It was a mildly frustrating experience.")
+        #expect(grouped[1].text == "The descriptor loads were not uniform. They could not be prefetched into GMEM.")
+    }
+
+    @Test("Falls back to geometry when the author header is above the viewport")
+    func fallsBackWithoutHeader() {
+        let filter = EnglishTextFilter()
+        let grouped = DiscordMessageGrouper().group([
+            line("First visible message.", x: 300, y: 100),
+            line("Second visible message.", x: 300, y: 160)
+        ], filteringWith: filter)
+
+        #expect(grouped.map(\.text) == ["First visible message.", "Second visible message."])
+    }
+
     private func line(
         _ text: String,
         x: Double,

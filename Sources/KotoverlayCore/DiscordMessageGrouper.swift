@@ -14,12 +14,7 @@ public struct DiscordMessageGrouper: Sendable {
     }
 
     public func group(_ lines: [DetectedText]) -> [DetectedText] {
-        let ordered = lines.sorted { lhs, rhs in
-            if abs(lhs.bounds.y - rhs.bounds.y) > 4 {
-                return lhs.bounds.y < rhs.bounds.y
-            }
-            return lhs.bounds.x < rhs.bounds.x
-        }
+        let ordered = ordered(lines)
         guard let first = ordered.first else { return [] }
 
         var groups: [LineGroup] = []
@@ -36,6 +31,79 @@ public struct DiscordMessageGrouper: Sendable {
         return groups.map(\.detectedText)
     }
 
+    public func group(
+        _ lines: [DetectedText],
+        filteringWith filter: EnglishTextFilter
+    ) -> [DetectedText] {
+        let ordered = ordered(lines)
+        var groups: [LineGroup] = []
+        var current: LineGroup?
+        var insideAuthorBlock = false
+
+        for line in ordered {
+            if let boundary = boundaryRole(for: line.text) {
+                flush(&current, into: &groups)
+                insideAuthorBlock = boundary == .authorHeader
+                continue
+            }
+            guard filter.accepts(line) else { continue }
+
+            if var existing = current {
+                if insideAuthorBlock || canJoin(previousLine: existing.lastLine, nextLine: line) {
+                    existing.append(line)
+                    current = existing
+                } else {
+                    groups.append(existing)
+                    current = LineGroup(line)
+                }
+            } else {
+                current = LineGroup(line)
+            }
+        }
+        flush(&current, into: &groups)
+        return groups.map(\.detectedText)
+    }
+
+    private func ordered(_ lines: [DetectedText]) -> [DetectedText] {
+        lines.sorted { lhs, rhs in
+            if abs(lhs.bounds.y - rhs.bounds.y) > 4 {
+                return lhs.bounds.y < rhs.bounds.y
+            }
+            return lhs.bounds.x < rhs.bounds.x
+        }
+    }
+
+    private func flush(_ current: inout LineGroup?, into groups: inout [LineGroup]) {
+        if let current { groups.append(current) }
+        current = nil
+    }
+
+    private func boundaryRole(for text: String) -> BoundaryRole? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasClock = trimmed.range(
+            of: #"\b\d{1,2}:\d{2}\b"#,
+            options: .regularExpression
+        ) != nil
+        let hasDayContext = trimmed.range(
+            of: #"\b\d{4}/\d{1,2}/\d{1,2}\b|\b(?:today|yesterday)\b|今日|昨日"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
+        let isExactClock = trimmed.range(
+            of: #"^\d{1,2}:\d{2}$"#,
+            options: .regularExpression
+        ) != nil
+        let latinWords = trimmed.lowercased().split { !$0.isLetter }.map(String.init)
+        let looksLikeShortAuthorHeader = latinWords.count <= 3
+            && !latinWords.contains(where: Self.conversationalHeaderWords.contains)
+            && trimmed.count <= 80
+
+        if hasClock && (hasDayContext || isExactClock || looksLikeShortAuthorHeader) {
+            return .authorHeader
+        }
+        if hasDayContext { return .sectionDivider }
+        return nil
+    }
+
     private func canJoin(previousLine: DetectedText, nextLine: DetectedText) -> Bool {
         let previous = previousLine.bounds.cgRect
         let next = nextLine.bounds.cgRect
@@ -50,6 +118,17 @@ public struct DiscordMessageGrouper: Sendable {
         let allowedDrift = min(maximumHorizontalDrift, max(10, lineHeight * 1.5))
         return abs(previous.minX - next.minX) <= allowedDrift
     }
+}
+
+private extension DiscordMessageGrouper {
+    enum BoundaryRole {
+        case authorHeader
+        case sectionDivider
+    }
+
+    static let conversationalHeaderWords: Set<String> = [
+        "at", "by", "for", "from", "in", "meet", "on", "since", "until"
+    ]
 }
 
 private struct LineGroup {
