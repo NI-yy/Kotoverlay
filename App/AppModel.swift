@@ -4,6 +4,19 @@ import CoreGraphics
 import Foundation
 import KotoverlayCore
 
+enum TranslationPresentationMode: String, CaseIterable, Identifiable {
+    case companion
+    case inPlace
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .companion: "Companion panel"
+        case .inPlace: "In-place overlay"
+        }
+    }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var isRunning = false
@@ -15,6 +28,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var translationCount = 0
     @Published private(set) var results: [TranslationResult] = []
     @Published private(set) var persistentCacheEnabled: Bool
+    @Published private(set) var presentationMode: TranslationPresentationMode
+    @Published private(set) var alwaysShowOverlayOriginals: Bool
     @Published private(set) var diagnosticsSummary = "No scan has completed."
 
     var canStart: Bool {
@@ -27,14 +42,22 @@ final class AppModel: ObservableObject {
     private var scanTask: Task<Void, Never>?
     private var latestPipelineTask: Task<Void, Never>?
     private var lastDiscordFrame: CGRect?
+    private var lastDiscordWindowID: CGWindowID?
+    private var resultsDiscordFrame: CGRect?
 
     private lazy var panelController = CompanionPanelController { [weak self] in
         self?.pause()
     }
+    private lazy var overlayController = InPlaceOverlayController()
 
     init() {
         let persistenceEnabled = UserDefaults.standard.bool(
             forKey: "persistentTranslationCacheEnabled"
+        )
+        let storedMode = UserDefaults.standard.string(forKey: "translationPresentationMode")
+        presentationMode = TranslationPresentationMode(rawValue: storedMode ?? "") ?? .companion
+        alwaysShowOverlayOriginals = UserDefaults.standard.bool(
+            forKey: "alwaysShowOverlayOriginals"
         )
         let provider = OllamaTranslationProvider()
         let persistent = PersistentTranslationCache(fileURL: Self.cacheURL())
@@ -54,6 +77,7 @@ final class AppModel: ObservableObject {
                 maximumConcurrentTranslations: 1
             )
         )
+        overlayController.setAlwaysShowOriginals(alwaysShowOverlayOriginals)
     }
 
     func refreshReadiness() {
@@ -96,6 +120,7 @@ final class AppModel: ObservableObject {
         latestPipelineTask = nil
         Task { await pipeline.cancel() }
         panelController.hide()
+        overlayController.clear()
         statusMessage = "Paused"
     }
 
@@ -114,9 +139,7 @@ final class AppModel: ObservableObject {
                 results = []
                 translationCount = 0
                 statusMessage = "Translation cache cleared."
-                if let frame = lastDiscordFrame {
-                    panelController.update(results: [], status: statusMessage, discordFrame: frame)
-                }
+                presentCurrentResults()
             } catch {
                 statusMessage = "Could not clear the local cache."
             }
@@ -132,6 +155,19 @@ final class AppModel: ObservableObject {
                 ? "Persistent translation cache enabled."
                 : "Persistent translation cache disabled."
         }
+    }
+
+    func setPresentationMode(_ mode: TranslationPresentationMode) {
+        guard presentationMode != mode else { return }
+        presentationMode = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: "translationPresentationMode")
+        presentCurrentResults()
+    }
+
+    func setAlwaysShowOverlayOriginals(_ enabled: Bool) {
+        alwaysShowOverlayOriginals = enabled
+        UserDefaults.standard.set(enabled, forKey: "alwaysShowOverlayOriginals")
+        overlayController.setAlwaysShowOriginals(enabled)
     }
 
     func copyDiagnostics() {
@@ -178,11 +214,8 @@ final class AppModel: ObservableObject {
                 try Task.checkCancellation()
                 discordAvailable = true
                 lastDiscordFrame = capture.frame
-                panelController.update(
-                    results: results,
-                    status: statusMessage,
-                    discordFrame: capture.frame
-                )
+                lastDiscordWindowID = capture.windowID
+                presentCurrentResults()
 
                 if try changeDetector.hasMeaningfulChange(image: capture.image) {
                     let recognized = try await recognize(capture)
@@ -243,6 +276,7 @@ final class AppModel: ObservableObject {
     private func apply(_ run: PipelineRun, discordFrame: CGRect) {
         guard isRunning, !run.diagnostics.superseded else { return }
         results = run.results
+        resultsDiscordFrame = discordFrame
         translationCount = run.results.count
         let failures = run.diagnostics.failureCounts.values.reduce(0, +)
         diagnosticsSummary = [
@@ -256,23 +290,16 @@ final class AppModel: ObservableObject {
         statusMessage = failures == 0
             ? "Showing \(run.results.count) translations"
             : "Showing \(run.results.count) translations; \(failures) failed"
-        panelController.update(
-            results: run.results,
-            status: statusMessage,
-            discordFrame: discordFrame
-        )
+        presentCurrentResults()
     }
 
     private func applyProgress(_ partialResults: [TranslationResult], discordFrame: CGRect) {
         guard isRunning else { return }
         results = partialResults
+        resultsDiscordFrame = discordFrame
         translationCount = partialResults.count
         statusMessage = "Showing \(partialResults.count) translations…"
-        panelController.update(
-            results: partialResults,
-            status: statusMessage,
-            discordFrame: discordFrame
-        )
+        presentCurrentResults()
     }
 
     private func handleCaptureError(_ error: WindowCaptureError) {
@@ -285,8 +312,42 @@ final class AppModel: ObservableObject {
             discordAvailable = false
             statusMessage = "Waiting for a visible Discord window…"
             panelController.hide()
+            overlayController.hideAll()
         default:
             statusMessage = "Discord capture unavailable; retrying…"
+        }
+    }
+
+    private func presentCurrentResults() {
+        guard isRunning,
+              let currentDiscordFrame = lastDiscordFrame,
+              let discordWindowID = lastDiscordWindowID else {
+            panelController.hide()
+            overlayController.hideAll()
+            return
+        }
+        switch presentationMode {
+        case .companion:
+            overlayController.clear()
+            panelController.update(
+                results: results,
+                status: statusMessage,
+                discordFrame: currentDiscordFrame
+            )
+        case .inPlace:
+            panelController.hide()
+            guard let sourceDiscordFrame = resultsDiscordFrame else {
+                overlayController.hideAll()
+                return
+            }
+            overlayController.update(
+                results: results,
+                sourceDiscordFrame: sourceDiscordFrame,
+                currentDiscordFrame: currentDiscordFrame,
+                discordWindowID: discordWindowID,
+                discordIsFrontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+                    == "com.hnc.Discord"
+            )
         }
     }
 

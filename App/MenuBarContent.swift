@@ -26,6 +26,19 @@ struct MenuBarContent: View {
 
             ReadinessRows(model: model)
 
+            Picker(
+                "Display",
+                selection: Binding(
+                    get: { model.presentationMode },
+                    set: { model.setPresentationMode($0) }
+                )
+            ) {
+                ForEach(TranslationPresentationMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
             HStack {
                 Button(model.isRunning ? "Pause" : "Start") {
                     model.isRunning ? model.pause() : model.start()
@@ -139,6 +152,17 @@ struct SettingsContent: View {
                     )
                 )
                 Button("Clear Translation Cache") { model.clearCache() }
+            }
+            Section("In-place overlay") {
+                Text("Overlay windows ignore mouse input. Hold Option to reveal the original English text.")
+                    .foregroundStyle(.secondary)
+                Toggle(
+                    "Always show original text",
+                    isOn: Binding(
+                        get: { model.alwaysShowOverlayOriginals },
+                        set: { model.setAlwaysShowOverlayOriginals($0) }
+                    )
+                )
             }
         }
         .formStyle(.grouped)

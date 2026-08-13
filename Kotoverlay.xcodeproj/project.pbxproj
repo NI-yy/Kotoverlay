@@ -12,6 +12,7 @@
 		31D52F11593A7E12DB179194 /* MenuBarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3447D9BFCDAD275D68041A38 /* MenuBarContent.swift */; };
 		AEFCB83C65F4D2BA919E55E4 /* KotoverlayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42ECE57C3290F87D2BF912FE /* KotoverlayApp.swift */; };
 		EF983E77CE534F25E0B8B497 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6995F014771C5A4CA9993701 /* AppModel.swift */; };
+		FBB0B1EBD012AEEA29C61DE3 /* InPlaceOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CADC5664D93CD9101399D8C9 /* InPlaceOverlayController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		7D36025F9A2B0DB0B762D2FB /* Kotoverlay */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Kotoverlay; path = .; sourceTree = SOURCE_ROOT; };
 		B117051E7CFDEABB26A09B04 /* Kotoverlay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kotoverlay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B9B4E6848332FF6DEF62EC37 /* CompanionPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionPanelController.swift; sourceTree = "<group>"; };
+		CADC5664D93CD9101399D8C9 /* InPlaceOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InPlaceOverlayController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,6 +51,7 @@
 			children = (
 				6995F014771C5A4CA9993701 /* AppModel.swift */,
 				B9B4E6848332FF6DEF62EC37 /* CompanionPanelController.swift */,
+				CADC5664D93CD9101399D8C9 /* InPlaceOverlayController.swift */,
 				42ECE57C3290F87D2BF912FE /* KotoverlayApp.swift */,
 				3447D9BFCDAD275D68041A38 /* MenuBarContent.swift */,
 			);
@@ -136,6 +139,7 @@
 			files = (
 				EF983E77CE534F25E0B8B497 /* AppModel.swift in Sources */,
 				097D131F15B588CE157A92EB /* CompanionPanelController.swift in Sources */,
+				FBB0B1EBD012AEEA29C61DE3 /* InPlaceOverlayController.swift in Sources */,
 				AEFCB83C65F4D2BA919E55E4 /* KotoverlayApp.swift in Sources */,
 				31D52F11593A7E12DB179194 /* MenuBarContent.swift in Sources */,
 			);
