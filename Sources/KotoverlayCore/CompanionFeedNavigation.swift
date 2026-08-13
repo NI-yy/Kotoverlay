@@ -17,14 +17,19 @@ public enum CompanionFeedNavigation {
         return Set(previous).isDisjoint(with: Set(current))
     }
 
-    public static func shouldKeepFollowingAfterLatestChanges(
-        previousLatest: MessageIdentity?,
-        currentLatest: MessageIdentity?,
-        visibleIdentity: MessageIdentity?
-    ) -> Bool {
-        guard previousLatest != nil, previousLatest != currentLatest else {
-            return true
-        }
-        return visibleIdentity == currentLatest
+    public static func distanceFromBottom(
+        documentHeight: Double,
+        viewportHeight: Double,
+        verticalOffset: Double
+    ) -> Double {
+        max(0, documentHeight - viewportHeight - verticalOffset)
+    }
+
+    public static func verticalOffset(
+        preservingDistanceFromBottom distance: Double,
+        documentHeight: Double,
+        viewportHeight: Double
+    ) -> Double {
+        max(0, documentHeight - viewportHeight - max(0, distance))
     }
 }

@@ -8,15 +8,21 @@ final class CompanionPanelController: NSObject, NSWindowDelegate {
     private let panel: NSPanel
     private let hostingController: NSHostingController<CompanionPanelView>
     private let viewModel: CompanionPanelViewModel
+    private let scrollCoordinator: CompanionScrollCoordinator
     private let onClose: () -> Void
     private var programmaticHide = false
 
     init(onClose: @escaping () -> Void) {
         self.onClose = onClose
         let viewModel = CompanionPanelViewModel()
+        let scrollCoordinator = CompanionScrollCoordinator()
         self.viewModel = viewModel
+        self.scrollCoordinator = scrollCoordinator
         hostingController = NSHostingController(
-            rootView: CompanionPanelView(model: viewModel)
+            rootView: CompanionPanelView(
+                model: viewModel,
+                scrollCoordinator: scrollCoordinator
+            )
         )
         panel = NSPanel(
             contentRect: CGRect(x: 0, y: 0, width: 380, height: 640),
@@ -36,7 +42,13 @@ final class CompanionPanelController: NSObject, NSWindowDelegate {
     }
 
     func update(results: [TranslationResult], status: String, discordFrame: CGRect) {
-        viewModel.update(results: results, status: status)
+        let distanceFromBottom = scrollCoordinator.distanceFromBottom()
+        let startsNewContext = viewModel.update(results: results, status: status)
+        if startsNewContext {
+            scrollCoordinator.scrollToBottomAfterLayout()
+        } else if let distanceFromBottom {
+            scrollCoordinator.restoreAfterLayout(distanceFromBottom: distanceFromBottom)
+        }
         guard let mainScreenMaxY = NSScreen.screens.first?.frame.maxY else { return }
         let appKitDiscordFrame = ScreenCoordinateConverter.appKitRect(
             from: discordFrame,
@@ -67,29 +79,23 @@ final class CompanionPanelController: NSObject, NSWindowDelegate {
 final class CompanionPanelViewModel: ObservableObject {
     @Published private(set) var results: [TranslationResult] = []
     @Published private(set) var status = "Waiting for Discord…"
-    @Published private(set) var contextRevision = 0
 
-    func update(results: [TranslationResult], status: String) {
+    @discardableResult
+    func update(results: [TranslationResult], status: String) -> Bool {
         let ordered = results.sorted { $0.visibleOrder < $1.visibleOrder }
-        if CompanionFeedNavigation.startsNewVisibleContext(
+        let startsNewContext = CompanionFeedNavigation.startsNewVisibleContext(
             previous: self.results.map(\.identity),
             current: ordered.map(\.identity)
-        ) {
-            contextRevision &+= 1
-        }
+        )
         self.results = ordered
         self.status = status
+        return startsNewContext
     }
 }
 
 struct CompanionPanelView: View {
     @ObservedObject var model: CompanionPanelViewModel
-    @State private var scrollPosition: MessageIdentity?
-    @State private var followsLatest = true
-
-    private var latestIdentity: MessageIdentity? {
-        model.results.last?.identity
-    }
+    @ObservedObject var scrollCoordinator: CompanionScrollCoordinator
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -97,9 +103,9 @@ struct CompanionPanelView: View {
                 Image(systemName: "character.bubble")
                 Text(model.status).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                if !followsLatest {
+                if !scrollCoordinator.isAtBottom {
                     Button {
-                        followLatest()
+                        scrollCoordinator.scrollToBottomAfterLayout(animated: true)
                     } label: {
                         Label("Latest", systemImage: "arrow.down.to.line.compact")
                     }
@@ -145,34 +151,137 @@ struct CompanionPanelView: View {
                     .padding(12)
                 }
                 .defaultScrollAnchor(.bottom)
-                .scrollPosition(id: $scrollPosition, anchor: .bottom)
-                .onAppear { followLatest() }
-                .onChange(of: latestIdentity) { previousLatest, latest in
-                    followsLatest = CompanionFeedNavigation
-                        .shouldKeepFollowingAfterLatestChanges(
-                            previousLatest: previousLatest,
-                            currentLatest: latest,
-                            visibleIdentity: scrollPosition
-                        )
-                }
-                .onChange(of: scrollPosition) { _, visibleIdentity in
-                    followsLatest = CompanionFeedNavigation.isAtLatest(
-                        visibleIdentity: visibleIdentity,
-                        latestIdentity: latestIdentity
-                    )
-                }
-                .onChange(of: model.contextRevision) { _, _ in
-                    followLatest()
-                }
+                .background(CompanionScrollViewResolver(coordinator: scrollCoordinator))
+                .onAppear { scrollCoordinator.scrollToBottomAfterLayout() }
             }
         }
         .frame(minWidth: 300, minHeight: 300)
     }
+}
 
-    private func followLatest() {
-        followsLatest = true
-        withAnimation(.easeOut(duration: 0.2)) {
-            scrollPosition = latestIdentity
+@MainActor
+final class CompanionScrollCoordinator: ObservableObject {
+    @Published private(set) var isAtBottom = true
+
+    private weak var scrollView: NSScrollView?
+    private var boundsObserver: NSObjectProtocol?
+    private var pendingUpdate = 0
+
+    deinit {
+        if let boundsObserver { NotificationCenter.default.removeObserver(boundsObserver) }
+    }
+
+    func attach(_ scrollView: NSScrollView) {
+        guard self.scrollView !== scrollView else { return }
+        if let boundsObserver { NotificationCenter.default.removeObserver(boundsObserver) }
+        self.scrollView = scrollView
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        boundsObserver = NotificationCenter.default.addObserver(
+            forName: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.refreshBottomState() }
+        }
+        refreshBottomState()
+    }
+
+    func distanceFromBottom() -> CGFloat? {
+        guard let scrollView,
+              let documentView = scrollView.documentView else { return nil }
+        let visible = scrollView.documentVisibleRect
+        if !documentView.isFlipped {
+            return max(0, visible.minY - documentView.bounds.minY)
+        }
+        return CompanionFeedNavigation.distanceFromBottom(
+            documentHeight: documentView.bounds.height,
+            viewportHeight: visible.height,
+            verticalOffset: visible.minY - documentView.bounds.minY
+        )
+    }
+
+    func restoreAfterLayout(distanceFromBottom: CGFloat) {
+        scheduleAfterLayout { [weak self] in
+            self?.scroll(distanceFromBottom: distanceFromBottom)
+        }
+    }
+
+    func scrollToBottomAfterLayout(animated: Bool = false) {
+        scheduleAfterLayout { [weak self] in
+            guard let self else { return }
+            if animated, let scrollView = self.scrollView {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.2
+                    self.scroll(distanceFromBottom: 0, animator: scrollView.contentView.animator())
+                }
+            } else {
+                self.scroll(distanceFromBottom: 0)
+            }
+        }
+    }
+
+    private func scheduleAfterLayout(_ operation: @escaping @MainActor () -> Void) {
+        pendingUpdate &+= 1
+        let update = pendingUpdate
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.pendingUpdate == update else { return }
+            self.scrollView?.documentView?.layoutSubtreeIfNeeded()
+            operation()
+        }
+    }
+
+    private func scroll(
+        distanceFromBottom: CGFloat,
+        animator: NSClipView? = nil
+    ) {
+        guard let scrollView,
+              let documentView = scrollView.documentView else { return }
+        let viewportHeight = scrollView.contentView.bounds.height
+        let targetY: CGFloat
+        if documentView.isFlipped {
+            targetY = documentView.bounds.minY + CompanionFeedNavigation.verticalOffset(
+                preservingDistanceFromBottom: distanceFromBottom,
+                documentHeight: documentView.bounds.height,
+                viewportHeight: viewportHeight
+            )
+        } else {
+            targetY = documentView.bounds.minY + max(0, distanceFromBottom)
+        }
+        let clipView = animator ?? scrollView.contentView
+        clipView.setBoundsOrigin(NSPoint(x: scrollView.contentView.bounds.minX, y: targetY))
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+        refreshBottomState()
+    }
+
+    private func refreshBottomState() {
+        guard let distance = distanceFromBottom() else { return }
+        isAtBottom = distance <= 2
+    }
+}
+
+private struct CompanionScrollViewResolver: NSViewRepresentable {
+    let coordinator: CompanionScrollCoordinator
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        resolve(from: view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        resolve(from: nsView)
+    }
+
+    private func resolve(from view: NSView) {
+        DispatchQueue.main.async {
+            var ancestor: NSView? = view
+            while let current = ancestor {
+                if let scrollView = current as? NSScrollView {
+                    coordinator.attach(scrollView)
+                    return
+                }
+                ancestor = current.superview
+            }
         }
     }
 }
