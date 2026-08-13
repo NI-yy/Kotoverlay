@@ -125,6 +125,32 @@ struct LiveTranslationPipelineTests {
         #expect(await probe.maximumActive == 2)
     }
 
+    @Test("Drops oldest candidates when one snapshot exceeds its limit")
+    func boundsCandidatesPerSnapshot() async {
+        let recorder = RequestRecorder()
+        let provider = MockTranslationProvider { request in
+            makeStream {
+                await recorder.record(request.sourceText)
+                return "訳:\(request.sourceText)"
+            }
+        }
+        let pipeline = LiveTranslationPipeline(
+            provider: provider,
+            configuration: LivePipelineConfiguration(maximumCandidatesPerSnapshot: 2)
+        )
+
+        let run = await pipeline.process(snapshot([
+            detected("old message here", order: 0, y: 100),
+            detected("middle message here", order: 1, y: 200),
+            detected("new message here", order: 2, y: 300)
+        ]))
+
+        #expect(await recorder.requests == ["new message here", "middle message here"])
+        #expect(run.results.map(\.visibleOrder) == [1, 2])
+        #expect(run.diagnostics.eligibleCount == 3)
+        #expect(run.diagnostics.backpressureDropCount == 1)
+    }
+
     @Test("Publishes each completed translation before the full run finishes")
     func progressiveResults() async {
         let progress = ProgressRecorder()

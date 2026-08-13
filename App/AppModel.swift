@@ -199,6 +199,8 @@ final class AppModel: ObservableObject {
         installedModels=\(installedModels.joined(separator: ","))
         discord=\(discordAvailable)
         persistentCache=\(persistentCacheEnabled)
+        cacheLimits=memory:\(TranslationCacheCapacity.memory),persistent:\(TranslationCacheCapacity.persistent)
+        candidateLimit=\(LivePipelineConfiguration.defaultMaximumCandidatesPerSnapshot)
         \(diagnosticsSummary)
         """
         NSPasteboard.general.clearContents()
@@ -243,9 +245,32 @@ final class AppModel: ObservableObject {
     private func scanLoop() async {
         let clock = ContinuousClock()
         var changeDetector = FrameChangeDetector()
+        var scanSchedule = AdaptiveScanSchedule()
+        var captureBackoff = RetryBackoff()
+        var ollamaBackoff = RetryBackoff()
 
         while !Task.isCancelled {
             let started = clock.now
+            var interval = scanSchedule.activeInterval
+
+            if !ollamaReady {
+                await refreshReadinessNow()
+                guard !Task.isCancelled else { break }
+                if !ollamaReady {
+                    statusMessage = "Waiting for Ollama to restart…"
+                    interval = ollamaBackoff.nextDelay()
+                    let elapsed = started.duration(to: clock.now)
+                    if elapsed < interval {
+                        try? await Task.sleep(for: interval - elapsed)
+                    }
+                    continue
+                }
+                ollamaBackoff.reset()
+                changeDetector = FrameChangeDetector()
+                scanSchedule.reset()
+                statusMessage = "Ollama reconnected; resuming…"
+            }
+
             do {
                 let capture = try await DiscordWindowCapturer().capture()
                 try Task.checkCancellation()
@@ -254,7 +279,9 @@ final class AppModel: ObservableObject {
                 lastDiscordWindowID = capture.windowID
                 presentCurrentResults()
 
-                if try changeDetector.hasMeaningfulChange(image: capture.image) {
+                let changed = try changeDetector.hasMeaningfulChange(image: capture.image)
+                interval = scanSchedule.interval(afterMeaningfulChange: changed)
+                if changed {
                     let recognized = try await recognize(capture)
                     try Task.checkCancellation()
                     let observations = DiscordObservationFilter().filter(
@@ -277,6 +304,7 @@ final class AppModel: ObservableObject {
                     )
                     statusMessage = "Translating \(texts.count) OCR regions…"
                     let currentPipeline = pipeline
+                    latestPipelineTask?.cancel()
                     latestPipelineTask = Task { [weak self] in
                         guard let self else { return }
                         let run = await currentPipeline.process(snapshot) { [weak self] partialResults in
@@ -286,16 +314,18 @@ final class AppModel: ObservableObject {
                         self.apply(run, discordFrame: capture.frame)
                     }
                 }
+                captureBackoff.reset()
             } catch is CancellationError {
                 break
             } catch let error as WindowCaptureError {
                 handleCaptureError(error)
+                interval = captureBackoff.nextDelay()
             } catch {
                 statusMessage = "Capture or OCR failed; retrying…"
+                interval = captureBackoff.nextDelay()
             }
 
             let elapsed = started.duration(to: clock.now)
-            let interval = Duration.milliseconds(500)
             if elapsed < interval {
                 try? await Task.sleep(for: interval - elapsed)
             }
@@ -322,17 +352,24 @@ final class AppModel: ObservableObject {
         resultsDiscordFrame = discordFrame
         translationCount = run.results.count
         let failures = run.diagnostics.failureCounts.values.reduce(0, +)
+        let providerFailures = run.diagnostics.failureCounts[.providerUnavailable, default: 0]
         diagnosticsSummary = [
             "observed=\(run.diagnostics.observedCount)",
             "eligible=\(run.diagnostics.eligibleCount)",
             "duplicates=\(run.diagnostics.duplicateCount)",
+            "backpressureDrops=\(run.diagnostics.backpressureDropCount)",
             "cacheHits=\(run.diagnostics.cacheHitCount)",
             "translated=\(run.diagnostics.translatedCount)",
             "failures=\(failures)"
         ].joined(separator: " ")
-        statusMessage = failures == 0
-            ? "Showing \(run.results.count) translations"
-            : "Showing \(run.results.count) translations; \(failures) failed"
+        if providerFailures > 0 {
+            ollamaReady = false
+            statusMessage = "Waiting for Ollama to restart…"
+        } else {
+            statusMessage = failures == 0
+                ? "Showing \(run.results.count) translations"
+                : "Showing \(run.results.count) translations; \(failures) failed"
+        }
         presentCurrentResults()
     }
 
@@ -435,7 +472,9 @@ final class AppModel: ObservableObject {
             configuration: LivePipelineConfiguration(
                 providerID: "ollama:\(model)",
                 promptVersion: "2",
-                maximumConcurrentTranslations: 1
+                maximumConcurrentTranslations: 1,
+                maximumCandidatesPerSnapshot:
+                    LivePipelineConfiguration.defaultMaximumCandidatesPerSnapshot
             )
         )
     }

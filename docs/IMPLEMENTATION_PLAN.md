@@ -206,6 +206,15 @@ Release targets:
 - No outbound connection except loopback in the default configuration.
 - Clean recovery after Discord or Ollama restarts.
 
+Implementation status: Issue #17 provides the first hardening slice. Translation
+work is capped at 32 newest candidates per snapshot, memory and persistent
+caches are capped at 512 and 2,000 entries, unchanged-frame polling backs off
+from 0.5 to 1 second, and Discord/Ollama outages use capped retry delays. An
+Ollama health recovery resets frame detection so the visible snapshot is
+translated again without pressing Retry. Instruments profiles, the privacy
+threat model, synthetic end-to-end fixtures, and Kotoverlay accessibility remain
+on the parent Issue #7.
+
 ## Phase 8: Packaging and release automation
 
 Goal: publish reproducible GitHub releases without committing secrets.

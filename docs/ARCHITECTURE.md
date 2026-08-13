@@ -82,6 +82,8 @@ boundaries are mandatory:
   numbers.
 - A channel/window generation invalidates older translation tasks.
 - Translation concurrency starts at one for the M2 / 8 GB reference machine.
+- One snapshot schedules at most 32 newest translation candidates.
+- Translation caches are bounded and prune deterministic victims at insertion.
 - OCR and Accessibility scans use independent rate limits.
 
 ## Identity and caching

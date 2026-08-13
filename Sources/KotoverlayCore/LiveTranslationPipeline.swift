@@ -1,18 +1,23 @@
 import Foundation
 
 public struct LivePipelineConfiguration: Equatable, Sendable {
+    public static let defaultMaximumCandidatesPerSnapshot = 32
+
     public var providerID: String
     public var promptVersion: String
     public var maximumConcurrentTranslations: Int
+    public var maximumCandidatesPerSnapshot: Int
 
     public init(
         providerID: String = "ollama:qwen3:1.7b",
         promptVersion: String = "2",
-        maximumConcurrentTranslations: Int = 1
+        maximumConcurrentTranslations: Int = 1,
+        maximumCandidatesPerSnapshot: Int = Self.defaultMaximumCandidatesPerSnapshot
     ) {
         self.providerID = providerID
         self.promptVersion = promptVersion
         self.maximumConcurrentTranslations = max(1, maximumConcurrentTranslations)
+        self.maximumCandidatesPerSnapshot = max(1, maximumCandidatesPerSnapshot)
     }
 }
 
@@ -30,6 +35,7 @@ public struct PipelineDiagnostics: Codable, Equatable, Sendable {
     public let eligibleCount: Int
     public let excludedCounts: [TextExclusionReason: Int]
     public let duplicateCount: Int
+    public let backpressureDropCount: Int
     public let cacheHitCount: Int
     public let translatedCount: Int
     public let failureCounts: [PipelineFailureCategory: Int]
@@ -40,6 +46,7 @@ public struct PipelineDiagnostics: Codable, Equatable, Sendable {
         eligibleCount: Int,
         excludedCounts: [TextExclusionReason: Int],
         duplicateCount: Int,
+        backpressureDropCount: Int,
         cacheHitCount: Int,
         translatedCount: Int,
         failureCounts: [PipelineFailureCategory: Int],
@@ -49,6 +56,7 @@ public struct PipelineDiagnostics: Codable, Equatable, Sendable {
         self.eligibleCount = eligibleCount
         self.excludedCounts = excludedCounts
         self.duplicateCount = duplicateCount
+        self.backpressureDropCount = backpressureDropCount
         self.cacheHitCount = cacheHitCount
         self.translatedCount = translatedCount
         self.failureCounts = failureCounts
@@ -168,8 +176,11 @@ private enum PipelineWorker {
         var cacheHits: [TranslationResult] = []
         var pending: [Candidate] = []
         var failures: [PipelineFailureCategory: Int] = [:]
+        let prioritized = filtered.identified.sorted(by: newestFirst)
+        let selected = prioritized.prefix(configuration.maximumCandidatesPerSnapshot)
+        let backpressureDropCount = prioritized.count - selected.count
 
-        for identified in filtered.identified.sorted(by: newestFirst) {
+        for identified in selected {
             guard !Task.isCancelled else {
                 failures[.cancelled, default: 0] += 1
                 break
@@ -225,6 +236,7 @@ private enum PipelineWorker {
                 eligibleCount: filtered.identified.count,
                 excludedCounts: filtered.excluded,
                 duplicateCount: filtered.duplicateCount,
+                backpressureDropCount: backpressureDropCount,
                 cacheHitCount: cacheHits.count,
                 translatedCount: translated.count,
                 failureCounts: failures,
@@ -412,6 +424,7 @@ private extension PipelineDiagnostics {
             eligibleCount: eligibleCount,
             excludedCounts: excludedCounts,
             duplicateCount: duplicateCount,
+            backpressureDropCount: backpressureDropCount,
             cacheHitCount: cacheHitCount,
             translatedCount: translatedCount,
             failureCounts: failures,
