@@ -56,7 +56,7 @@ final class AppModel: ObservableObject {
     private var performanceMetrics = RuntimePerformanceMetrics()
     private let performanceLog = OSLog(
         subsystem: "dev.niyy.Kotoverlay",
-        category: "Performance"
+        category: .pointsOfInterest
     )
 
     private lazy var panelController = CompanionPanelController { [weak self] in

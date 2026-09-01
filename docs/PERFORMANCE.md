@@ -17,7 +17,8 @@ The **Copy Diagnostics** action includes sample counts, average and maximum
 milliseconds, changed/unchanged frame counts, and failure count. It never
 includes source text, translations, author names, channel names, screenshots,
 or raw OCR observations. Static Instruments signposts use the subsystem
-`dev.niyy.Kotoverlay`, category `Performance`, and these interval names:
+`dev.niyy.Kotoverlay`, the system `PointsOfInterest` category, and these
+interval names:
 
 - `Discord capture`
 - `Vision OCR`
