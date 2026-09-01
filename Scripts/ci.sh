@@ -17,6 +17,7 @@ required_files=(
   docs/TRANSLATION_CLI.md
   docs/LIVE_PIPELINE.md
   docs/APP.md
+  docs/PERFORMANCE.md
   docs/decisions/0001-use-ocr-for-discord-content.md
   project.yml
 )

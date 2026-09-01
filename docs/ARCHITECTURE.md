@@ -85,6 +85,9 @@ boundaries are mandatory:
 - One snapshot schedules at most 32 newest translation candidates.
 - Translation caches are bounded and prune deterministic victims at insertion.
 - OCR and Accessibility scans use independent rate limits.
+- Capture, OCR, and translation emit static content-free signpost intervals.
+- In-app duration aggregation retains at most 256 samples per stage and resets
+  when a new scan session starts.
 
 ## Identity and caching
 
