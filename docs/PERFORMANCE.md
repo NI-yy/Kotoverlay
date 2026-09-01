@@ -56,14 +56,39 @@ with Allocations before Phase 7 closes.
 
 ## Reference result table
 
-Fill this table from one continuous test session. Do not estimate missing values.
+Record only values available from the trace or content-free diagnostics. Do not
+estimate missing values. The project owner accepted the 2026-09-01 reference
+runs as the Phase 7 baseline on 2026-09-02; a separate lightweight RSS run was
+not required for this baseline.
 
 | Date | Build commit | Scenario | Avg CPU | Peak CPU | Start memory | End memory | Result |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Pending | Pending | Idle | — | — | — | — | Not measured |
-| Pending | Pending | Scroll | — | — | — | — | Not measured |
-| Pending | Pending | Translation | — | — | — | — | Not measured |
-| Pending | Pending | Long run | — | — | — | — | Not measured |
+| 2026-09-01 | `ead471b` | Idle (5 min 28 sec) | — | — | — | — | Accepted; no OCR or translation work in the final 3 min |
+| 2026-09-01 | `ead471b` | Scroll (59.8 sec) | — | — | — | — | Pass; no hangs and changed-frame work remained bounded |
+| 2026-09-01 | `ead471b` | Translation (59.8 sec) | — | — | — | — | Pass; translation work was effectively sequential |
+| 2026-09-01 | `ead471b` | Long run (16 min 1 sec) | — | — | — | 115.0 MB persistent heap | Accepted with limitation; start RSS was not recorded |
+
+### 2026-09-01 observations
+
+- Idle final three minutes: 173 captures averaged 84.67 ms. OCR and
+  translation counts were both zero. Instruments reported no hangs and a
+  nominal thermal state. CPU percentage was not recorded; the final-three-minute
+  sample rate was 25.30 million CPU cycles per second.
+- Scroll run: 73 captures averaged 64.40 ms; 23 OCR intervals averaged
+  431.68 ms; and 23 translation intervals averaged 2,149.90 ms. There were no
+  hangs and the thermal state remained nominal.
+- Translation intervals had a maximum concurrency of two, but overlapped for
+  only 1.44 ms in total. This is treated as effectively sequential execution.
+- Long run: the final Allocations snapshot reported 114,989,360 bytes of
+  persistent heap and 5,029,888 bytes of persistent anonymous VM. The bounded
+  diagnostics retained 256 capture samples, 94 OCR samples, and 94 translation
+  samples. Two capture failures were recorded; the app continued running.
+- The long-run trace was used only for local analysis and deleted without being
+  published because Instruments traces can include launch-environment metadata.
+- Because start and periodic resident-memory samples were not recorded, this
+  baseline does not claim that the stable-band memory criterion was measured.
+  Re-run the lightweight RSS procedure if a future change shows suspected
+  memory growth.
 
 ## Pass criteria
 
