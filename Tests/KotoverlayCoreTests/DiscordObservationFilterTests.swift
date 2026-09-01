@@ -16,6 +16,9 @@ struct DiscordObservationFilterTests {
 
         let filtered = DiscordObservationFilter().filter(observations, in: window)
         #expect(filtered.map(\.text) == ["A long message that reaches the right side"])
+
+        let analysis = DiscordObservationFilter().analyze(observations, in: window)
+        #expect(analysis.contentFrame.maxX == 840)
     }
 
     @Test("Does not crop sparse right-side message content")
@@ -28,6 +31,10 @@ struct DiscordObservationFilterTests {
 
         #expect(
             DiscordObservationFilter().filter(observations, in: window) == observations
+        )
+        #expect(
+            DiscordObservationFilter().analyze(observations, in: window).contentFrame
+                == window
         )
     }
 

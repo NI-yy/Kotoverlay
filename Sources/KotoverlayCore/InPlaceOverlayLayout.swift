@@ -40,6 +40,37 @@ public enum InPlaceOverlayLayout {
         return screenFrames.contains { intersectsWithPositiveArea(frame, $0) }
     }
 
+    /// Places a measured, potentially multi-line translation on its source
+    /// anchor while keeping the complete panel inside the message content area.
+    public static func overlayFrame(
+        anchoredTo anchor: CGRect,
+        desiredSize: CGSize,
+        inside contentBounds: CGRect,
+        horizontalMargin: CGFloat = 10
+    ) -> CGRect? {
+        guard anchor.width > 0, anchor.height > 0,
+              desiredSize.width > 0, desiredSize.height > 0,
+              contentBounds.width > 0, contentBounds.height > 0 else {
+            return nil
+        }
+
+        let availableWidth = contentBounds.maxX - max(anchor.minX, contentBounds.minX)
+            - horizontalMargin
+        guard availableWidth >= 100 else { return nil }
+
+        let width = min(desiredSize.width, availableWidth)
+        let height = min(desiredSize.height, contentBounds.height)
+        let x = max(
+            contentBounds.minX,
+            min(anchor.minX, contentBounds.maxX - horizontalMargin - width)
+        )
+        let top = min(anchor.maxY + 1, contentBounds.maxY)
+        let y = max(contentBounds.minY, top - height)
+        let frame = CGRect(x: x, y: y, width: width, height: height)
+        guard contentBounds.contains(frame) else { return nil }
+        return frame
+    }
+
     /// Resolves small OCR-box overlaps without allowing an overlay to drift far
     /// enough that it appears attached to a different Discord message.
     public static func resolveCollisions(

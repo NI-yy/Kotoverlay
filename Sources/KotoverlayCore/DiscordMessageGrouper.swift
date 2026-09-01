@@ -42,7 +42,15 @@ public struct DiscordMessageGrouper: Sendable {
 
         for line in ordered {
             if let boundary = boundaryRole(for: line.text) {
-                flush(&current, into: &groups)
+                if boundary == .authorHeader,
+                   current?.isReplyPreview(
+                    before: line,
+                    minimumIndent: maximumHorizontalDrift
+                   ) == true {
+                    current = nil
+                } else {
+                    flush(&current, into: &groups)
+                }
                 insideAuthorBlock = boundary == .authorHeader
                 continue
             }
@@ -143,6 +151,14 @@ private struct LineGroup {
     mutating func append(_ line: DetectedText) {
         lines.append(line)
         lastLine = line
+    }
+
+    func isReplyPreview(before authorHeader: DetectedText, minimumIndent: CGFloat) -> Bool {
+        guard let first = lines.first else { return false }
+        let trimmed = first.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("@") else { return false }
+        return first.bounds.cgRect.minX - authorHeader.bounds.cgRect.minX
+            >= max(12, minimumIndent)
     }
 
     var detectedText: DetectedText {

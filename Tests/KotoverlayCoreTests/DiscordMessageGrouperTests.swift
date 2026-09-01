@@ -57,6 +57,36 @@ struct DiscordMessageGrouperTests {
         #expect(grouped[1].text == "The descriptor loads were not uniform. They could not be prefetched into GMEM.")
     }
 
+    @Test("Drops an indented reply preview before the author header")
+    func dropsReplyPreview() {
+        let filter = EnglishTextFilter()
+        let grouped = DiscordMessageGrouper().group([
+            line("@Turtel/Vhans Anyone had acceleration structures remain?", x: 340, y: 100),
+            line("Amelie 2026/08/27 5:34", x: 300, y: 124),
+            line("Not as far as I am aware of.", x: 300, y: 148),
+            line("But I am using the latest beta.", x: 300, y: 170)
+        ], filteringWith: filter)
+
+        #expect(grouped.map(\.text) == [
+            "Not as far as I am aware of. But I am using the latest beta."
+        ])
+    }
+
+    @Test("Keeps a non-indented message that begins with a mention")
+    func keepsMentionMessage() {
+        let filter = EnglishTextFilter()
+        let grouped = DiscordMessageGrouper().group([
+            line("@Dilute can you show the shader?", x: 300, y: 100),
+            line("Ben 2026/08/27 15:47", x: 300, y: 145),
+            line("Here is the shader.", x: 300, y: 169)
+        ], filteringWith: filter)
+
+        #expect(grouped.map(\.text) == [
+            "@Dilute can you show the shader?",
+            "Here is the shader."
+        ])
+    }
+
     @Test("Falls back to geometry when the author header is above the viewport")
     func fallsBackWithoutHeader() {
         let filter = EnglishTextFilter()
