@@ -48,6 +48,22 @@ struct InPlaceOverlayLayoutTests {
         ))
     }
 
+    @Test("Keeps a multi-line overlay inside the message column")
+    func placesMultilineOverlayInsideMessageColumn() throws {
+        let messageColumn = CGRect(x: 0, y: 0, width: 840, height: 800)
+        let source = CGRect(x: 220, y: 500, width: 300, height: 42)
+
+        let frame = try #require(InPlaceOverlayLayout.overlayFrame(
+            anchoredTo: source,
+            desiredSize: CGSize(width: 700, height: 92),
+            inside: messageColumn
+        ))
+
+        #expect(frame.height == 92)
+        #expect(frame.maxX <= 830)
+        #expect(frame.minY >= messageColumn.minY)
+    }
+
     @Test("Moves minor overlaps but drops overlays that would lose their source association")
     func resolvesCollisions() {
         let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)

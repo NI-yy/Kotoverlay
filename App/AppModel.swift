@@ -53,6 +53,7 @@ final class AppModel: ObservableObject {
     private var lastDiscordFrame: CGRect?
     private var lastDiscordWindowID: CGWindowID?
     private var resultsDiscordFrame: CGRect?
+    private var resultsDiscordContentFrame: CGRect?
     private var performanceMetrics = RuntimePerformanceMetrics()
     private let performanceLog = OSLog(
         subsystem: "dev.niyy.Kotoverlay",
@@ -178,6 +179,7 @@ final class AppModel: ObservableObject {
         results = []
         translationCount = 0
         resultsDiscordFrame = nil
+        resultsDiscordContentFrame = nil
         statusMessage = "Model changed to \(model). Ready to start."
         refreshReadiness()
     }
@@ -303,11 +305,11 @@ final class AppModel: ObservableObject {
                         try await recognize(capture)
                     }
                     try Task.checkCancellation()
-                    let observations = DiscordObservationFilter().filter(
+                    let observationAnalysis = DiscordObservationFilter().analyze(
                         recognized,
                         in: capture.frame
                     )
-                    let recognizedLines = observations
+                    let recognizedLines = observationAnalysis.observations
                         .sorted(by: visualOrder)
                         .enumerated()
                         .map { DetectedText(observation: $0.element, visibleOrder: $0.offset) }
@@ -334,11 +336,16 @@ final class AppModel: ObservableObject {
                                 guard let self else { return }
                                 await self.applyProgress(
                                     partialResults,
-                                    discordFrame: capture.frame
+                                    discordFrame: capture.frame,
+                                    discordContentFrame: observationAnalysis.contentFrame
                                 )
                             }
                         }
-                        self.apply(run, discordFrame: capture.frame)
+                        self.apply(
+                            run,
+                            discordFrame: capture.frame,
+                            discordContentFrame: observationAnalysis.contentFrame
+                        )
                     }
                 }
                 captureBackoff.reset()
@@ -404,10 +411,15 @@ final class AppModel: ObservableObject {
         return try await operation()
     }
 
-    private func apply(_ run: PipelineRun, discordFrame: CGRect) {
+    private func apply(
+        _ run: PipelineRun,
+        discordFrame: CGRect,
+        discordContentFrame: CGRect
+    ) {
         guard isRunning, !run.diagnostics.superseded else { return }
         results = run.results
         resultsDiscordFrame = discordFrame
+        resultsDiscordContentFrame = discordContentFrame
         translationCount = run.results.count
         let failures = run.diagnostics.failureCounts.values.reduce(0, +)
         let providerFailures = run.diagnostics.failureCounts[.providerUnavailable, default: 0]
@@ -431,10 +443,15 @@ final class AppModel: ObservableObject {
         presentCurrentResults()
     }
 
-    private func applyProgress(_ partialResults: [TranslationResult], discordFrame: CGRect) {
+    private func applyProgress(
+        _ partialResults: [TranslationResult],
+        discordFrame: CGRect,
+        discordContentFrame: CGRect
+    ) {
         guard isRunning else { return }
         results = partialResults
         resultsDiscordFrame = discordFrame
+        resultsDiscordContentFrame = discordContentFrame
         translationCount = partialResults.count
         statusMessage = "Showing \(partialResults.count) translations…"
         presentCurrentResults()
@@ -474,13 +491,15 @@ final class AppModel: ObservableObject {
             )
         case .inPlace:
             panelController.hide()
-            guard let sourceDiscordFrame = resultsDiscordFrame else {
+            guard let sourceDiscordFrame = resultsDiscordFrame,
+                  let sourceDiscordContentFrame = resultsDiscordContentFrame else {
                 overlayController.hideAll()
                 return
             }
             overlayController.update(
                 results: results,
                 sourceDiscordFrame: sourceDiscordFrame,
+                sourceDiscordContentFrame: sourceDiscordContentFrame,
                 currentDiscordFrame: currentDiscordFrame,
                 discordWindowID: discordWindowID,
                 discordIsFrontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier

@@ -27,6 +27,7 @@ final class InPlaceOverlayController {
     func update(
         results: [TranslationResult],
         sourceDiscordFrame: CGRect,
+        sourceDiscordContentFrame: CGRect,
         currentDiscordFrame: CGRect,
         discordWindowID: CGWindowID,
         discordIsFrontmost: Bool
@@ -41,6 +42,18 @@ final class InPlaceOverlayController {
             from: currentDiscordFrame,
             mainScreenMaxY: mainScreenMaxY
         )
+        guard let currentDiscordContentFrame = InPlaceOverlayLayout.reproject(
+            sourceDiscordContentFrame,
+            from: sourceDiscordFrame,
+            to: currentDiscordFrame
+        ) else {
+            hideAll()
+            return
+        }
+        let currentAppKitContentFrame = ScreenCoordinateConverter.appKitRect(
+            from: currentDiscordContentFrame,
+            mainScreenMaxY: mainScreenMaxY
+        ).intersection(currentAppKitDiscordFrame)
         let visibleScreenFrames = NSScreen.screens.map(\.visibleFrame)
         var candidates: [(result: TranslationResult, entry: OverlayEntry, frame: CGRect)] = []
 
@@ -56,26 +69,27 @@ final class InPlaceOverlayController {
             )
             guard InPlaceOverlayLayout.isVisible(
                 anchor,
-                inside: currentAppKitDiscordFrame,
+                inside: currentAppKitContentFrame,
                 screenFrames: visibleScreenFrames
             ) else { continue }
 
             let entry = entries[result.identity] ?? OverlayEntry()
             entries[result.identity] = entry
+            guard let frame = overlayFrame(
+                for: result,
+                anchoredTo: anchor,
+                inside: currentAppKitContentFrame
+            ) else { continue }
             candidates.append((
                 result: result,
                 entry: entry,
-                frame: overlayFrame(
-                    for: result,
-                    anchoredTo: anchor,
-                    inside: currentAppKitDiscordFrame
-                )
+                frame: frame
             ))
         }
 
         let resolvedFrames = InPlaceOverlayLayout.resolveCollisions(
             candidates.map(\.frame),
-            inside: currentAppKitDiscordFrame
+            inside: currentAppKitContentFrame
         )
         var activeIdentities: Set<MessageIdentity> = []
         for (candidate, resolvedFrame) in zip(candidates, resolvedFrames) {
@@ -126,25 +140,36 @@ final class InPlaceOverlayController {
         for result: TranslationResult,
         anchoredTo anchor: CGRect,
         inside discordFrame: CGRect
-    ) -> CGRect {
+    ) -> CGRect? {
         let horizontalMargin: CGFloat = 10
-        let availableWidth = max(100, discordFrame.maxX - anchor.minX - horizontalMargin)
+        let horizontalPadding: CGFloat = 14
+        let verticalPadding: CGFloat = 5
+        let availableWidth = discordFrame.maxX - anchor.minX - horizontalMargin
+        guard availableWidth >= 100 else { return nil }
         let fontSize = min(16, max(11, anchor.height * 0.72))
         let font = NSFont.systemFont(ofSize: fontSize, weight: .medium)
-        let measured = (result.translatedText as NSString).boundingRect(
-            with: CGSize(width: 2_000, height: 40),
-            options: [.usesFontLeading],
-            attributes: [.font: font]
-        )
-        let width = min(
-            max(anchor.width + 12, ceil(measured.width) + 14),
+        let preferredWidth = min(
+            max(anchor.width + horizontalPadding, min(520, availableWidth)),
             availableWidth
         )
-        let height = min(34, max(20, anchor.height + 5))
-        let x = max(discordFrame.minX, min(anchor.minX, discordFrame.maxX - width))
-        let top = min(anchor.maxY + 1, discordFrame.maxY)
-        let y = max(discordFrame.minY, top - height)
-        return CGRect(x: x, y: y, width: width, height: height)
+        let measured = (result.translatedText as NSString).boundingRect(
+            with: CGSize(
+                width: max(60, preferredWidth - horizontalPadding),
+                height: 400
+            ),
+            options: [.usesFontLeading, .usesLineFragmentOrigin],
+            attributes: [.font: font]
+        )
+        let desiredHeight = min(
+            150,
+            max(anchor.height + verticalPadding, ceil(measured.height) + verticalPadding)
+        )
+        return InPlaceOverlayLayout.overlayFrame(
+            anchoredTo: anchor,
+            desiredSize: CGSize(width: preferredWidth, height: desiredHeight),
+            inside: discordFrame,
+            horizontalMargin: horizontalMargin
+        )
     }
 
     private func overlayFontSize(for frame: CGRect) -> CGFloat {
@@ -237,10 +262,11 @@ private struct InPlaceTranslationView: View {
         Text(showOriginal ? sourceText : translatedText)
             .font(.system(size: fontSize, weight: .medium))
             .foregroundStyle(.white)
-            .lineLimit(1)
-            .minimumScaleFactor(0.65)
+            .lineLimit(6)
+            .multilineTextAlignment(.leading)
+            .minimumScaleFactor(0.9)
             .allowsTightening(true)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 7)
         .padding(.vertical, 2)
         .background(.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 5))
